@@ -4,6 +4,7 @@ import "./ui.css";
 import "leaflet/dist/leaflet.css";
 import AppShell from "@/components/AppShell";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import CloudAutoSync from "@/components/CloudAutoSync";
 
 export const metadata: Metadata = {
   title: "Sylva — Gestion de chantiers forestiers",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ServiceWorkerRegister />
+        <CloudAutoSync />
         <AppShell>{children}</AppShell>
       </body>
     </html>

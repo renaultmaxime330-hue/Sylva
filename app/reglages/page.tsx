@@ -6,9 +6,8 @@ import { db } from "@/lib/db";
 import { exporterSauvegarde, importerSauvegarde, nomFichierSauvegarde, estimationStockage } from "@/lib/backup";
 import { downloadText } from "@/lib/export";
 import { formatTaille } from "@/lib/format";
-import {
-  IcSettings, IcDownload, IcUpload, IcCloud, IcCheck, IcWifiOff, IcSite, IcChart, IcMap,
-} from "@/lib/icons";
+import CloudSection from "@/components/CloudSection";
+import { IcSettings, IcDownload, IcUpload, IcCloud, IcCheck, IcWifiOff } from "@/lib/icons";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -161,19 +160,8 @@ export default function ReglagesPage() {
         </div>
       </div>
 
-      {/* Cloud (à venir) */}
-      <div className="card pad">
-        <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><IcCloud /> Synchronisation cloud <span className="tag-soon">Bientôt</span></h3>
-        <p className="muted" style={{ fontSize: 14.5 }}>
-          La sauvegarde automatique en ligne et la synchronisation entre tes appareils (téléphone, tablette, ordinateur)
-          arrivent prochainement. Elle nécessitera un compte gratuit — je te guiderai pour le créer.
-        </p>
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 14, color: "var(--text-muted)", fontSize: 13.5 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IcSite /> Chantiers</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IcMap /> Cartes</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IcChart /> Production</span>
-        </div>
-      </div>
+      {/* Synchronisation cloud (Supabase) */}
+      <CloudSection />
     </div>
   );
 }
