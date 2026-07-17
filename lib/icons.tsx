@@ -43,6 +43,9 @@ export const IcUsers = (p: P) => (
 export const IcPlus = (p: P) => (
   <svg {...base(p)}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
 );
+export const IcMinus = (p: P) => (
+  <svg {...base(p)}><line x1="5" y1="12" x2="19" y2="12" /></svg>
+);
 export const IcSearch = (p: P) => (
   <svg {...base(p)}><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /></svg>
 );
@@ -114,4 +117,13 @@ export const IcUpload = (p: P) => (
 );
 export const IcCloud = (p: P) => (
   <svg {...base(p)}><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6-1.5A4 4 0 0 0 6 19Z" /></svg>
+);
+export const IcPrint = (p: P) => (
+  <svg {...base(p)}><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+);
+export const IcReport = (p: P) => (
+  <svg {...base(p)}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="13" y2="17" /></svg>
+);
+export const IcReceipt = (p: P) => (
+  <svg {...base(p)}><path d="M5 2v20l2.5-1.5L10 22l2-1.5L14 22l2.5-1.5L19 22V2l-2.5 1.5L14 2l-2 1.5L10 2 7.5 3.5Z" /><line x1="8.5" y1="8" x2="15.5" y2="8" /><line x1="8.5" y1="12" x2="15.5" y2="12" /></svg>
 );

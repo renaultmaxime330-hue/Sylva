@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { useChantier } from "@/lib/queries/chantiers";
 import ChantierForm from "@/components/ChantierForm";
 import { IcBack } from "@/lib/icons";
 
 export default function ModifierChantier() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const chantier = useLiveQuery(() => db.chantiers.get(id).then((c) => c ?? null), [id]);
+  const { data: chantier } = useChantier(id);
 
   if (chantier === undefined) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   if (chantier === null) {

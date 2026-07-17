@@ -2,22 +2,17 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, totalVolume, type Chantier, type Photo, type DocFile } from "@/lib/db";
-import {
-  supprimerChantier, ajouterPhoto, supprimerPhoto,
-  ajouterDocument, supprimerDocument, obtenirPosition, marquerTermine,
-} from "@/lib/chantiers";
+import { useState } from "react";
+import { totalVolume, type Chantier } from "@/lib/db";
+import { supprimerChantier, marquerTermine } from "@/lib/chantiers";
+import { useChantier } from "@/lib/queries/chantiers";
 import StatutPill from "@/components/StatutPill";
 import VolumesChantier from "@/components/VolumesChantier";
 import MapChantier from "@/components/MapChantier";
-import { formatDate, formatSurface, formatGPS, formatTaille } from "@/lib/format";
-import {
-  IcBack, IcEdit, IcTrash, IcCamera, IcDoc, IcPlus, IcChart, IcCheck,
-} from "@/lib/icons";
+import { formatDate, formatSurface, formatGPS } from "@/lib/format";
+import { IcBack, IcEdit, IcTrash, IcChart, IcCheck } from "@/lib/icons";
 
-type Tab = "infos" | "carte" | "volumes" | "photos" | "docs";
+type Tab = "infos" | "carte" | "volumes";
 
 export default function FicheChantier() {
   const params = useParams<{ id: string }>();
@@ -25,15 +20,7 @@ export default function FicheChantier() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("infos");
 
-  const chantier = useLiveQuery(() => db.chantiers.get(id).then((c) => c ?? null), [id]);
-  const photos = useLiveQuery(
-    () => db.photos.where("chantierId").equals(id).reverse().sortBy("createdAt"),
-    [id]
-  );
-  const docs = useLiveQuery(
-    () => db.documents.where("chantierId").equals(id).reverse().sortBy("createdAt"),
-    [id]
-  );
+  const { data: chantier } = useChantier(id);
 
   if (chantier === undefined) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   if (chantier === null) {
@@ -48,13 +35,10 @@ export default function FicheChantier() {
   }
 
   async function onSupprimer() {
-    if (!confirm(`Supprimer le chantier « ${chantier!.nom} » ?\nCette action supprime aussi ses photos et documents.`)) return;
+    if (!confirm(`Supprimer le chantier « ${chantier!.nom} » ?\nCette action supprime aussi ses tracés de carte.`)) return;
     await supprimerChantier(id);
     router.push("/chantiers");
   }
-
-  const nbPhotos = photos?.length ?? 0;
-  const nbDocs = docs?.length ?? 0;
 
   return (
     <div className="stack-gap">
@@ -82,15 +66,11 @@ export default function FicheChantier() {
         <button className={tab === "infos" ? "on" : ""} onClick={() => setTab("infos")}>Infos</button>
         <button className={tab === "carte" ? "on" : ""} onClick={() => setTab("carte")}>Carte</button>
         <button className={tab === "volumes" ? "on" : ""} onClick={() => setTab("volumes")}>Volumes</button>
-        <button className={tab === "photos" ? "on" : ""} onClick={() => setTab("photos")}>Photos {nbPhotos > 0 && `(${nbPhotos})`}</button>
-        <button className={tab === "docs" ? "on" : ""} onClick={() => setTab("docs")}>Documents {nbDocs > 0 && `(${nbDocs})`}</button>
       </div>
 
       {tab === "infos" && <OngletInfos chantier={chantier} />}
       {tab === "carte" && <MapChantier chantier={chantier} readOnly editHref={`/carte?c=${id}`} />}
       {tab === "volumes" && <OngletVolumes chantier={chantier} />}
-      {tab === "photos" && <OngletPhotos id={id} photos={photos ?? []} />}
-      {tab === "docs" && <OngletDocs id={id} docs={docs ?? []} />}
     </div>
   );
 }
@@ -149,123 +129,4 @@ function OngletVolumes({ chantier }: { chantier: Chantier }) {
     );
   }
   return <VolumesChantier chantier={chantier} />;
-}
-
-/* ---------- Onglet Photos ---------- */
-function OngletPhotos({ id, photos }: { id: string; photos: Photo[] }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-    setBusy(true);
-    let pos: { lat: number; lng: number } | undefined;
-    try { pos = await obtenirPosition(); } catch { pos = undefined; }
-    for (const file of files) {
-      await ajouterPhoto(id, file, file.name || "photo.jpg", pos);
-    }
-    setBusy(false);
-    if (inputRef.current) inputRef.current.value = "";
-  }
-
-  return (
-    <div className="stack-gap">
-      <input ref={inputRef} type="file" accept="image/*" capture="environment"
-        multiple style={{ display: "none" }} onChange={onFiles} />
-      <div>
-        <button className="btn primary big" onClick={() => inputRef.current?.click()} disabled={busy}>
-          <IcCamera /> {busy ? "Ajout…" : "Ajouter une photo"}
-        </button>
-      </div>
-
-      {photos.length === 0 ? (
-        <div className="card pad empty">
-          <div className="ic"><IcCamera /></div>
-          <h3>Aucune photo</h3>
-          <p>Prends des photos du chantier — elles sont enregistrées avec ta position GPS quand elle est disponible.</p>
-        </div>
-      ) : (
-        <div className="gallery">
-          {photos.map((p) => <PhotoTile key={p.id} photo={p} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PhotoTile({ photo }: { photo: Photo }) {
-  const [url, setUrl] = useState<string>("");
-  useEffect(() => {
-    const u = URL.createObjectURL(photo.blob);
-    setUrl(u);
-    return () => URL.revokeObjectURL(u);
-  }, [photo.blob]);
-  return (
-    <div className="ph">
-      {url && <img src={url} alt={photo.nom} />}
-      <button className="del" aria-label="Supprimer la photo"
-        onClick={() => { if (confirm("Supprimer cette photo ?")) supprimerPhoto(photo.id); }}>
-        <IcTrash />
-      </button>
-    </div>
-  );
-}
-
-/* ---------- Onglet Documents ---------- */
-function OngletDocs({ id, docs }: { id: string; docs: DocFile[] }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-    setBusy(true);
-    for (const file of files) await ajouterDocument(id, file);
-    setBusy(false);
-    if (inputRef.current) inputRef.current.value = "";
-  }
-
-  function ouvrir(doc: DocFile) {
-    const u = URL.createObjectURL(doc.blob);
-    window.open(u, "_blank");
-    setTimeout(() => URL.revokeObjectURL(u), 60000);
-  }
-
-  return (
-    <div className="stack-gap">
-      <input ref={inputRef} type="file" accept=".pdf,application/pdf,image/*"
-        multiple style={{ display: "none" }} onChange={onFiles} />
-      <div>
-        <button className="btn primary big" onClick={() => inputRef.current?.click()} disabled={busy}>
-          <IcPlus /> {busy ? "Ajout…" : "Ajouter un document"}
-        </button>
-      </div>
-
-      {docs.length === 0 ? (
-        <div className="card pad empty">
-          <div className="ic"><IcDoc /></div>
-          <h3>Aucun document</h3>
-          <p>Ajoute les contrats, autorisations de coupe ou plans PDF liés à ce chantier.</p>
-        </div>
-      ) : (
-        <div className="list">
-          {docs.map((d) => (
-            <div className="doc-row" key={d.id}>
-              <div className="fi"><IcDoc /></div>
-              <div className="meta">
-                <div className="n">{d.nom}</div>
-                <div className="s">{formatTaille(d.taille)} · {formatDate(d.createdAt.slice(0, 10))}</div>
-              </div>
-              <button className="btn ghost" onClick={() => ouvrir(d)}>Ouvrir</button>
-              <button className="iconbtn" aria-label="Supprimer le document"
-                onClick={() => { if (confirm("Supprimer ce document ?")) supprimerDocument(d.id); }}>
-                <IcTrash />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }

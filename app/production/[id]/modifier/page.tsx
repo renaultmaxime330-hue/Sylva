@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { useJournee } from "@/lib/queries/journees";
 import JourneeForm from "@/components/JourneeForm";
 import { IcBack } from "@/lib/icons";
 
 export default function ModifierJournee() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const journee = useLiveQuery(() => db.journees.get(id).then((j) => j ?? null), [id]);
+  const { data: journee } = useJournee(id);
 
   if (journee === undefined) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   if (journee === null) {

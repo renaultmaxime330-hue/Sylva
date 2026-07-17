@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
-import { amorcerDemo } from "@/lib/chantiers";
-import { amorcerDemoProduction, agreger, filtrePeriode } from "@/lib/production";
+import { useState } from "react";
+import { useChantiers } from "@/lib/queries/chantiers";
+import { useJournees } from "@/lib/queries/journees";
+import { agreger, filtrePeriode } from "@/lib/production";
 import { formatHeures } from "@/lib/format";
 import { IcClock, IcTruck, IcPin, IcSite, IcPlus } from "@/lib/icons";
 
@@ -15,12 +14,8 @@ const LABELS: Record<Periode, string> = { semaine: "cette semaine", mois: "ce mo
 export default function TempsPage() {
   const [periode, setPeriode] = useState<Periode>("mois");
 
-  useEffect(() => {
-    (async () => { await amorcerDemo(); await amorcerDemoProduction(); })();
-  }, []);
-
-  const journees = useLiveQuery(() => db.journees.orderBy("date").reverse().toArray(), []);
-  const chantiers = useLiveQuery(() => db.chantiers.toArray(), []);
+  const { data: journees } = useJournees();
+  const { data: chantiers } = useChantiers();
 
   if (!journees || !chantiers) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 

@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/db";
 import {
   IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck,
-  IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings,
+  IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt,
 } from "@/lib/icons";
 
 type Item = { href: string; label: string; icon: (p: object) => ReactNode; soon?: boolean };
@@ -17,9 +19,11 @@ const NAV: Item[] = [
   { href: "/production", label: "Production", icon: IcChart },
   { href: "/temps", label: "Temps de travail", icon: IcClock },
   { href: "/engins", label: "Engins", icon: IcTruck },
-  { href: "/materiel", label: "Matériel", icon: IcBox, soon: true },
-  { href: "/compta", label: "Comptabilité", icon: IcEuro, soon: true },
-  { href: "/clients", label: "Clients", icon: IcUsers, soon: true },
+  { href: "/materiel", label: "Matériel", icon: IcBox },
+  { href: "/compta", label: "Comptabilité", icon: IcEuro },
+  { href: "/factures", label: "Devis & Factures", icon: IcReceipt },
+  { href: "/rapports", label: "Rapports", icon: IcReport },
+  { href: "/clients", label: "Clients", icon: IcUsers },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -73,6 +77,7 @@ function ThemeButton() {
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const online = useOnline();
+  const nonLues = useLiveQuery(() => db.notifs.where("lu").equals(0).count(), [], 0);
 
   return (
     <div className="shell">
@@ -98,6 +103,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 key={it.href}
                 href={it.href}
                 className={"nav-item" + (isActive(pathname, it.href) ? " active" : "")}
+                aria-current={isActive(pathname, it.href) ? "page" : undefined}
               >
                 <Icon /> <span>{it.label}</span>
               </Link>
@@ -109,10 +115,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <Link href="/reglages" className={"nav-item" + (isActive(pathname, "/reglages") ? " active" : "")}>
             <IcSettings /> <span>Réglages</span>
           </Link>
-          <div className="nav-item" style={{ justifyContent: "space-between" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-              <IcBell /> Alertes
-            </span>
+          <div className="nav-item-row">
+            <Link href="/alertes" className={"nav-item" + (isActive(pathname, "/alertes") ? " active" : "")} style={{ flex: 1 }}>
+              <IcBell /> <span>Alertes</span>
+              {nonLues > 0 && <span className="badge-nb">{nonLues > 99 ? "99+" : nonLues}</span>}
+            </Link>
             <ThemeButton />
           </div>
           <div className="muted" style={{ fontSize: 12, padding: "8px 12px" }}>
@@ -134,6 +141,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <IcWifiOff /> Hors-ligne
             </span>
           )}
+          <Link href="/alertes" className="iconbtn cloche" aria-label={`Alertes${nonLues > 0 ? ` (${nonLues} non lues)` : ""}`}>
+            <IcBell />
+            {nonLues > 0 && <span className="badge-pt">{nonLues > 9 ? "9+" : nonLues}</span>}
+          </Link>
           <ThemeButton />
         </header>
 

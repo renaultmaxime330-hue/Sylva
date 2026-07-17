@@ -13,7 +13,7 @@ export default function EnginForm({ initial }: { initial?: Engin }) {
     initial
       ? {
           type: initial.type, nom: initial.nom, marque: initial.marque ?? "", modele: initial.modele ?? "",
-          heuresTotal: initial.heuresTotal, coutHoraire: initial.coutHoraire, seuilEntretienH: initial.seuilEntretienH,
+          heuresTotal: initial.heuresTotal, seuilEntretienH: initial.seuilEntretienH,
           actif: initial.actif, notes: initial.notes,
         }
       : champsVidesEngin()
@@ -60,16 +60,11 @@ export default function EnginForm({ initial }: { initial?: Engin }) {
         </div>
       </div>
 
-      <div className="grid-3">
+      <div className="grid-2">
         <div className="field">
           <label htmlFor="h">Compteur d&apos;heures</label>
           <input id="h" className="input" type="number" step="0.1" min="0" inputMode="decimal"
             value={f.heuresTotal ?? ""} placeholder="0" onChange={(e) => set("heuresTotal", num(e.target.value))} />
-        </div>
-        <div className="field">
-          <label htmlFor="cout">Coût horaire (€/h)</label>
-          <input id="cout" className="input" type="number" step="0.1" min="0" inputMode="decimal"
-            value={f.coutHoraire ?? ""} placeholder="0" onChange={(e) => set("coutHoraire", num(e.target.value))} />
         </div>
         <div className="field">
           <label htmlFor="seuil">Entretien tous les… (h)</label>

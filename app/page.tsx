@@ -1,20 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, totalVolume } from "@/lib/db";
-import { amorcerDemo } from "@/lib/chantiers";
+import { totalVolume } from "@/lib/db";
+import { useChantiers } from "@/lib/queries/chantiers";
 import StatutPill from "@/components/StatutPill";
 import { formatSurface } from "@/lib/format";
 import { IcSite, IcPlus, IcChevron, IcRuler, IcCheck, IcClock, IcChart } from "@/lib/icons";
 
 export default function Dashboard() {
-  useEffect(() => {
-    amorcerDemo();
-  }, []);
-
-  const chantiers = useLiveQuery(() => db.chantiers.orderBy("updatedAt").reverse().toArray(), []);
+  const { data: chantiers } = useChantiers();
 
   if (!chantiers) {
     return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;

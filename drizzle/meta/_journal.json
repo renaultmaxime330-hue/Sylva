@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1784277880289,
+      "tag": "0000_nostalgic_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784279083992,
+      "tag": "0001_white_multiple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784279910502,
+      "tag": "0002_early_obadiah_stane",
+      "breakpoints": true
+    }
+  ]
+}

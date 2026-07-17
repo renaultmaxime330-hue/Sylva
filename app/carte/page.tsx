@@ -3,20 +3,17 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
-import { amorcerDemo } from "@/lib/chantiers";
+import { useChantiers } from "@/lib/queries/chantiers";
+import { usePresence } from "@/lib/presence";
 import MapChantier from "@/components/MapChantier";
+import PresenceBar from "@/components/PresenceBar";
 import { IcMap, IcPlus, IcChevron } from "@/lib/icons";
 
 function CarteContent() {
   const searchParams = useSearchParams();
-  const chantiers = useLiveQuery(() => db.chantiers.orderBy("updatedAt").reverse().toArray(), []);
+  const presence = usePresence();
+  const { data: chantiers } = useChantiers();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    amorcerDemo();
-  }, []);
 
   // Présélection : ?c=<id> (depuis la fiche chantier) sinon 1er chantier
   useEffect(() => {
@@ -72,7 +69,9 @@ function CarteContent() {
         <Link href={`/chantiers/${selected.id}`} className="btn">Ouvrir la fiche <IcChevron /></Link>
       </div>
 
-      <MapChantier key={selected.id} chantier={selected} />
+      <PresenceBar {...presence} />
+
+      <MapChantier key={selected.id} chantier={selected} equipiers={presence.equipiers} />
     </div>
   );
 }

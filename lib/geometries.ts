@@ -1,5 +1,7 @@
 import area from "@turf/area";
-import { db, newId, geomTypeInfo, type GeomType, type GeoJSONGeometry, type Geometrie } from "./db";
+import { geomTypeInfo, type GeomType, type GeoJSONGeometry } from "./db";
+import { apiFetch } from "./client/auth";
+import { queryClient } from "./client/queryClient";
 
 /* Surface d'un polygone (lng/lat) en hectares, calcul géodésique via Turf. */
 export function surfaceHa(geojson: GeoJSONGeometry): number | undefined {
@@ -29,6 +31,15 @@ export function longueurM(geojson: GeoJSONGeometry): number | undefined {
   return Math.round(m);
 }
 
+async function lireErreur(r: Response, defaut: string): Promise<never> {
+  const d = await r.json().catch(() => null);
+  throw new Error(d?.erreur ?? defaut);
+}
+
+function invalider(chantierId: string) {
+  void queryClient.invalidateQueries({ queryKey: ["geometries", chantierId] });
+}
+
 export async function ajouterGeometrie(
   chantierId: string,
   type: GeomType,
@@ -37,27 +48,26 @@ export async function ajouterGeometrie(
   couleur?: string
 ): Promise<string> {
   const info = geomTypeInfo(type);
-  const id = newId();
-  const geo: Geometrie = {
-    id,
-    chantierId,
-    type,
-    nom: nom?.trim() || info.label,
-    couleur: couleur || info.couleur,
-    geojson,
-    surfaceHa: surfaceHa(geojson),
-    longueurM: longueurM(geojson),
-    createdAt: new Date().toISOString(),
-    syncStatus: "local",
-  };
-  await db.geometries.add(geo);
-  return id;
+  const r = await apiFetch("/api/geometries", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chantierId, type, geojson, nom: nom?.trim() || info.label, couleur: couleur || info.couleur }),
+  });
+  if (!r.ok) await lireErreur(r, "Impossible d'enregistrer le tracé.");
+  const { geometrie } = await r.json();
+  invalider(chantierId);
+  return geometrie.id as string;
 }
 
-export async function supprimerGeometrie(id: string): Promise<void> {
-  await db.geometries.delete(id);
+export async function supprimerGeometrie(id: string, chantierId: string): Promise<void> {
+  const r = await apiFetch(`/api/geometries/${id}`, { method: "DELETE" });
+  if (!r.ok) await lireErreur(r, "Impossible de supprimer le tracé.");
+  invalider(chantierId);
 }
 
-export async function renommerGeometrie(id: string, nom: string): Promise<void> {
-  await db.geometries.update(id, { nom, syncStatus: "local" });
+export async function renommerGeometrie(id: string, nom: string, chantierId: string): Promise<void> {
+  const r = await apiFetch(`/api/geometries/${id}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nom }),
+  });
+  if (!r.ok) await lireErreur(r, "Impossible de renommer le tracé.");
+  invalider(chantierId);
 }

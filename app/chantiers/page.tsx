@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, STATUTS, type Statut } from "@/lib/db";
+import { STATUTS, type Statut } from "@/lib/db";
+import { useChantiers } from "@/lib/queries/chantiers";
 import StatutPill from "@/components/StatutPill";
 import { formatSurface } from "@/lib/format";
 import { IcSite, IcPlus, IcChevron, IcSearch } from "@/lib/icons";
@@ -12,11 +12,9 @@ export default function ChantiersPage() {
   const [q, setQ] = useState("");
   const [filtre, setFiltre] = useState<Statut | "tous">("tous");
 
-  const chantiers = useLiveQuery(
-    () => db.chantiers.orderBy("updatedAt").reverse().toArray(),
-    []
-  );
+  const { data: chantiers, isError, error } = useChantiers();
 
+  if (isError) return <div className="muted" style={{ padding: 40 }}>Erreur : {error instanceof Error ? error.message : "échec du chargement."}</div>;
   if (!chantiers) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 
   const ql = q.trim().toLowerCase();

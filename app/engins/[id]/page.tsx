@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, enginTypeLabel, type Entretien } from "@/lib/db";
+import { enginTypeLabel, type Entretien } from "@/lib/db";
 import {
   supprimerEngin, ajouterEntretien, supprimerEntretien, alerteEntretien, type EntretienInput,
 } from "@/lib/engins";
+import { useEngin, useEntretiens } from "@/lib/queries/engins";
 import { formatDate, today } from "@/lib/format";
 import { IcBack, IcEdit, IcTrash, IcTruck, IcWarning, IcCheck, IcPlus } from "@/lib/icons";
 
@@ -19,10 +19,9 @@ export default function FicheEngin() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const engin = useLiveQuery(() => db.engins.get(id).then((e) => e ?? null), [id]);
-  const entretiens = useLiveQuery(
-    () => db.entretiens.where("enginId").equals(id).reverse().sortBy("date"), [id]
-  );
+  const { data: engin } = useEngin(id);
+  const { data: entretiensNonTries } = useEntretiens(id);
+  const entretiens = entretiensNonTries?.slice().sort((a, b) => b.date.localeCompare(a.date));
 
   if (engin === undefined || entretiens === undefined) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   if (engin === null) {
@@ -48,7 +47,6 @@ export default function FicheEngin() {
     { k: "Marque", v: engin.marque || "—" },
     { k: "Modèle", v: engin.modele || "—" },
     { k: "Compteur", v: engin.heuresTotal != null ? `${engin.heuresTotal.toLocaleString("fr-FR")} h` : "—" },
-    { k: "Coût horaire", v: engin.coutHoraire != null ? `${engin.coutHoraire.toLocaleString("fr-FR")} €/h` : "—" },
     { k: "Entretien tous les", v: engin.seuilEntretienH != null ? `${engin.seuilEntretienH} h` : "—" },
   ];
 
@@ -124,7 +122,7 @@ export default function FicheEngin() {
                 </div>
                 <div className="jactions">
                   <button className="iconbtn" aria-label="Supprimer"
-                    onClick={() => { if (confirm("Supprimer cet entretien ?")) supprimerEntretien(e.id); }}>
+                    onClick={() => { if (confirm("Supprimer cet entretien ?")) supprimerEntretien(e.id, id); }}>
                     <IcTrash />
                   </button>
                 </div>

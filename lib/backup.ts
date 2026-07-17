@@ -32,15 +32,27 @@ export interface Sauvegarde {
   chantiers: unknown[];
   geometries: unknown[];
   journees: unknown[];
+  engins: unknown[];
+  entretiens: unknown[];
+  materiel: unknown[];
+  finances: unknown[];
+  clients: unknown[];
+  factures: unknown[];
   photos: unknown[];
   documents: unknown[];
 }
 
 export async function exporterSauvegarde(): Promise<string> {
-  const [chantiers, geometries, journees, photos, documents] = await Promise.all([
+  const [chantiers, geometries, journees, engins, entretiens, materiel, finances, clients, factures, photos, documents] = await Promise.all([
     db.chantiers.toArray(),
     db.geometries.toArray(),
     db.journees.toArray(),
+    db.engins.toArray(),
+    db.entretiens.toArray(),
+    db.materiel.toArray(),
+    db.finances.toArray(),
+    db.clients.toArray(),
+    db.factures.toArray(),
     db.photos.toArray(),
     db.documents.toArray(),
   ]);
@@ -56,9 +68,7 @@ export async function exporterSauvegarde(): Promise<string> {
     app: APP,
     format: FORMAT,
     exportedAt: new Date().toISOString(),
-    chantiers,
-    geometries,
-    journees,
+    chantiers, geometries, journees, engins, entretiens, materiel, finances, clients, factures,
     photos: photosOut,
     documents: docsOut,
   };
@@ -69,6 +79,12 @@ export interface ImportResult {
   chantiers: number;
   geometries: number;
   journees: number;
+  engins: number;
+  entretiens: number;
+  materiel: number;
+  finances: number;
+  clients: number;
+  factures: number;
   photos: number;
   documents: number;
 }
@@ -90,18 +106,33 @@ export async function importerSauvegarde(json: string): Promise<ImportResult> {
     return { ...o, blob } as unknown;
   });
 
-  await db.transaction("rw", db.chantiers, db.geometries, db.journees, db.photos, db.documents, async () => {
-    if (data.chantiers) await db.chantiers.bulkPut(data.chantiers as never[]);
-    if (data.geometries) await db.geometries.bulkPut(data.geometries as never[]);
-    if (data.journees) await db.journees.bulkPut(data.journees as never[]);
-    if (photos.length) await db.photos.bulkPut(photos as never[]);
-    if (documents.length) await db.documents.bulkPut(documents as never[]);
-  });
+  await db.transaction("rw",
+    [db.chantiers, db.geometries, db.journees, db.engins, db.entretiens, db.materiel, db.finances, db.clients, db.factures, db.photos, db.documents],
+    async () => {
+      if (data.chantiers) await db.chantiers.bulkPut(data.chantiers as never[]);
+      if (data.geometries) await db.geometries.bulkPut(data.geometries as never[]);
+      if (data.journees) await db.journees.bulkPut(data.journees as never[]);
+      if (data.engins) await db.engins.bulkPut(data.engins as never[]);
+      if (data.entretiens) await db.entretiens.bulkPut(data.entretiens as never[]);
+      if (data.materiel) await db.materiel.bulkPut(data.materiel as never[]);
+      if (data.finances) await db.finances.bulkPut(data.finances as never[]);
+      if (data.clients) await db.clients.bulkPut(data.clients as never[]);
+      if (data.factures) await db.factures.bulkPut(data.factures as never[]);
+      if (photos.length) await db.photos.bulkPut(photos as never[]);
+      if (documents.length) await db.documents.bulkPut(documents as never[]);
+    }
+  );
 
   return {
     chantiers: data.chantiers?.length ?? 0,
     geometries: data.geometries?.length ?? 0,
     journees: data.journees?.length ?? 0,
+    engins: data.engins?.length ?? 0,
+    entretiens: data.entretiens?.length ?? 0,
+    materiel: data.materiel?.length ?? 0,
+    finances: data.finances?.length ?? 0,
+    clients: data.clients?.length ?? 0,
+    factures: data.factures?.length ?? 0,
     photos: photos.length,
     documents: documents.length,
   };

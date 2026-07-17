@@ -7,6 +7,7 @@ import {
 import {
   sauvegarderCloud, restaurerCloud, infoCloud, isAutoSave, setAutoSave,
 } from "@/lib/cloudsync";
+import { ROLES, getProfil, roleLabel, type Role, type Profil } from "@/lib/profil";
 import { IcCloud, IcCheck, IcDownload, IcUpload } from "@/lib/icons";
 
 function formatQuand(iso: string): string {
@@ -21,6 +22,11 @@ export default function CloudSection() {
   const [emailInput, setEmailInput] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signup");
+  // Profil choisi à la création du compte
+  const [nom, setNom] = useState("");
+  const [role, setRole] = useState<Role>("abatteur");
+  const [chef, setChef] = useState(false);
+  const [profil, setProfil] = useState<Profil | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -29,10 +35,15 @@ export default function CloudSection() {
 
   useEffect(() => {
     setAuto(isAutoSave());
-    sessionActuelle().then((s) => { setEmail(s?.user.email ?? ""); setChecking(false); if (s) infoCloud().then((i) => setLastCloud(i?.updatedAt ?? null)); });
+    sessionActuelle().then((s) => {
+      setEmail(s?.user.email ?? "");
+      setChecking(false);
+      if (s) { infoCloud().then((i) => setLastCloud(i?.updatedAt ?? null)); getProfil().then(setProfil); }
+    });
     const unsub = surChangementAuth((s) => {
       setEmail(s?.user.email ?? "");
-      if (s) infoCloud().then((i) => setLastCloud(i?.updatedAt ?? null));
+      if (s) { infoCloud().then((i) => setLastCloud(i?.updatedAt ?? null)); getProfil().then(setProfil); }
+      else setProfil(null);
     });
     return unsub;
   }, []);
@@ -45,7 +56,7 @@ export default function CloudSection() {
     setBusy(true); setErr(""); setMsg("");
     try {
       if (mode === "signup") {
-        const { besoinConfirmation } = await inscrire(emailInput.trim(), password);
+        const { besoinConfirmation } = await inscrire(emailInput.trim(), password, { nom: nom.trim(), role, chefEntreprise: chef });
         if (besoinConfirmation) { flash("Compte créé. Confirme ton e-mail, puis connecte-toi."); setMode("signin"); }
         else flash("Compte créé et connecté ✓");
       } else {
@@ -92,7 +103,8 @@ export default function CloudSection() {
       ) : email ? (
         <>
           <p className="muted" style={{ fontSize: 14.5, marginBottom: 4 }}>
-            Connecté en tant que <b style={{ color: "var(--text)" }}>{email}</b>.
+            Connecté en tant que <b style={{ color: "var(--text)" }}>{profil?.nom || email}</b>
+            {profil && <> — <span className="pill sm done" style={{ verticalAlign: "middle" }}>{roleLabel(profil.role)}</span>{profil.chefEntreprise && <> <span className="pill sm doing" style={{ verticalAlign: "middle" }}>Chef d&apos;entreprise</span></>}</>}
           </p>
           <p className="muted" style={{ fontSize: 13.5, marginBottom: 16 }}>
             {lastCloud ? `Dernière sauvegarde cloud : ${formatQuand(lastCloud)}.` : "Aucune sauvegarde cloud pour l'instant."}
@@ -129,8 +141,33 @@ export default function CloudSection() {
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 onChange={(e) => setPassword(e.target.value)} placeholder="••••••" />
             </div>
+
+            {mode === "signup" && (
+              <>
+                <div className="field">
+                  <label htmlFor="cnomu">Ton nom</label>
+                  <input id="cnomu" className="input" required value={nom} placeholder="Ex. Maxime"
+                    onChange={(e) => setNom(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Ton rôle</label>
+                  <div className="seg" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                    {ROLES.map((r) => (
+                      <button key={r.value} type="button" className={r.value === "abatteur" ? "done" : "doing"}
+                        data-on={role === r.value} onClick={() => setRole(r.value)}>{r.label}</button>
+                    ))}
+                  </div>
+                  <span className="hint">{ROLES.find((r) => r.value === role)?.desc}</span>
+                </div>
+                <label className="switch">
+                  <input type="checkbox" checked={chef} onChange={(e) => setChef(e.target.checked)} />
+                  <span>Je suis <b>chef d&apos;entreprise</b> <span className="muted">— accès à la comptabilité, aux factures et à la gestion de l&apos;équipe</span></span>
+                </label>
+              </>
+            )}
+
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <button type="submit" className="btn primary big" disabled={busy}>
+              <button type="submit" className="btn primary big" disabled={busy || (mode === "signup" && !nom.trim())}>
                 {busy ? "…" : mode === "signup" ? "Créer mon compte" : "Se connecter"}
               </button>
               <button type="button" className="btn ghost" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setErr(""); }}>

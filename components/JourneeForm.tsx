@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, type Journee } from "@/lib/db";
+import type { Journee } from "@/lib/db";
+import { useChantiers } from "@/lib/queries/chantiers";
 import {
   creerJournee, modifierJournee, heuresTravaillees, type JourneeInput, champsVidesJournee,
 } from "@/lib/production";
@@ -13,7 +13,7 @@ import { IcCheck, IcBack, IcChart, IcClock } from "@/lib/icons";
 export default function JourneeForm({ initial, chantierId }: { initial?: Journee; chantierId?: string }) {
   const router = useRouter();
   const editing = !!initial;
-  const chantiers = useLiveQuery(() => db.chantiers.orderBy("updatedAt").reverse().toArray(), []);
+  const { data: chantiers } = useChantiers();
 
   const [f, setF] = useState<JourneeInput>(
     initial

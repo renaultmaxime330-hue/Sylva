@@ -119,6 +119,9 @@ export interface Geometrie {
   surfaceHa?: number; // pour les polygones
   longueurM?: number; // pour les lignes (pistes, chemins) — en mètres
   createdAt: string;
+  /** Dernière modification — arbitre les conflits lors du partage d'équipe.
+      Absent sur les tracés créés avant le partage → createdAt fait foi. */
+  updatedAt?: string;
   syncStatus: "local" | "synced";
 }
 
@@ -166,7 +169,6 @@ export interface Engin {
   marque?: string;
   modele?: string;
   heuresTotal?: number;      // compteur d'heures actuel
-  coutHoraire?: number;      // € / h
   seuilEntretienH?: number;  // intervalle d'entretien (heures)
   actif: boolean;
   notes: string;
@@ -188,6 +190,134 @@ export interface Entretien {
   createdAt: string;
 }
 
+/* ---------- Matériel (inventaire) ---------- */
+export type MaterielCategorie =
+  | "chaine" | "guide" | "troncon" | "epi" | "gps" | "carburant" | "huile" | "piece" | "autre";
+
+export const MATERIEL_CATEGORIES: { value: MaterielCategorie; label: string }[] = [
+  { value: "chaine", label: "Chaînes" },
+  { value: "guide", label: "Guides" },
+  { value: "troncon", label: "Tronçonneuses" },
+  { value: "epi", label: "Casques / EPI" },
+  { value: "gps", label: "GPS" },
+  { value: "carburant", label: "Carburant" },
+  { value: "huile", label: "Huiles" },
+  { value: "piece", label: "Pièces" },
+  { value: "autre", label: "Autre" },
+];
+
+export function materielCatLabel(c: MaterielCategorie): string {
+  return MATERIEL_CATEGORIES.find((x) => x.value === c)?.label ?? "Autre";
+}
+
+export interface Materiel {
+  id: string;
+  categorie: MaterielCategorie;
+  nom: string;
+  quantite: number;
+  unite: string;          // "u", "L", "m"…
+  seuilAlerte?: number;   // stock bas si quantite <= seuil
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: "local" | "synced";
+}
+
+/* ---------- Comptabilité (recettes / dépenses) ---------- */
+export interface Finance {
+  id: string;
+  chantierId?: string;    // rattaché à un chantier (ou frais général)
+  type: "recette" | "depense";
+  categorie: string;
+  libelle: string;
+  montant: number;        // en €
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: "local" | "synced";
+}
+
+/* ---------- Clients / propriétaires ---------- */
+export interface Client {
+  id: string;
+  nom: string;
+  adresse?: string;
+  commune?: string;
+  telephone?: string;
+  email?: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: "local" | "synced";
+}
+
+/* ---------- Devis & Factures ---------- */
+export interface LigneDoc {
+  designation: string;
+  quantite: number;
+  unite: string;         // m³, h, forfait, u…
+  prixUnitaire: number;  // € HT
+}
+
+export type DocType = "devis" | "facture";
+export type DocStatut = "brouillon" | "envoye" | "accepte" | "paye" | "refuse";
+
+export const DOC_STATUTS: { value: DocStatut; label: string; cls: string }[] = [
+  { value: "brouillon", label: "Brouillon", cls: "todo" },
+  { value: "envoye", label: "Envoyé", cls: "doing" },
+  { value: "accepte", label: "Accepté", cls: "done" },
+  { value: "paye", label: "Payé", cls: "done" },
+  { value: "refuse", label: "Refusé", cls: "todo" },
+];
+
+export interface DocCommercial {
+  id: string;
+  type: DocType;
+  numero: string;
+  clientId?: string;
+  clientNom: string;
+  clientAdresse?: string;
+  chantierId?: string;
+  date: string;
+  dateEcheance?: string;
+  lignes: LigneDoc[];
+  tva: number;           // taux en % (0 = TVA non applicable)
+  notes: string;
+  statut: DocStatut;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: "local" | "synced";
+}
+
+/* ---------- Alertes & notifications ---------- */
+
+export type NotifType = "entretien" | "stock" | "chantier" | "carte";
+
+export interface Notif {
+  id: string;
+  type: NotifType;
+  titre: string;
+  detail: string;
+  href?: string;      // où aller au clic
+  /** Clé stable : évite de recréer 10 fois la même alerte. */
+  cle: string;
+  lu: 0 | 1;          // indexable (Dexie n'indexe pas les booléens)
+  createdAt: string;
+}
+
+/* ---------- Partage d'équipe ---------- */
+
+export type KindPartage = "chantier" | "geometrie";
+
+/** Trace d'une suppression, pour qu'elle se propage à l'équipe (sinon l'élément
+    reviendrait au prochain « tirer »). Effacée une fois poussée. */
+export interface Tombe {
+  cle: string;   // `${kind}:${id}`
+  kind: KindPartage;
+  id: string;
+  at: string;
+}
+
 class SylvaDB extends Dexie {
   chantiers!: Table<Chantier, string>;
   photos!: Table<Photo, string>;
@@ -196,6 +326,12 @@ class SylvaDB extends Dexie {
   journees!: Table<Journee, string>;
   engins!: Table<Engin, string>;
   entretiens!: Table<Entretien, string>;
+  materiel!: Table<Materiel, string>;
+  finances!: Table<Finance, string>;
+  clients!: Table<Client, string>;
+  factures!: Table<DocCommercial, string>;
+  notifs!: Table<Notif, string>;
+  tombes!: Table<Tombe, string>;
 
   constructor() {
     super("sylva");
@@ -216,6 +352,27 @@ class SylvaDB extends Dexie {
     this.version(4).stores({
       engins: "id, type, actif, updatedAt",
       entretiens: "id, enginId, date, createdAt",
+    });
+    // v5 : matériel (inventaire) & comptabilité
+    this.version(5).stores({
+      materiel: "id, categorie, updatedAt",
+      finances: "id, chantierId, type, date, updatedAt",
+    });
+    // v6 : clients / propriétaires
+    this.version(6).stores({
+      clients: "id, nom, updatedAt",
+    });
+    // v7 : devis & factures
+    this.version(7).stores({
+      factures: "id, type, numero, clientId, date, updatedAt",
+    });
+    // v8 : centre d'alertes (entretien, stock, fin de chantier, modifs carte de l'équipe)
+    this.version(8).stores({
+      notifs: "id, type, cle, lu, createdAt",
+    });
+    // v9 : suppressions en attente de propagation à l'équipe
+    this.version(9).stores({
+      tombes: "cle, kind, at",
     });
   }
 }

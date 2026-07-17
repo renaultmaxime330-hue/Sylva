@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { useEngin } from "@/lib/queries/engins";
 import EnginForm from "@/components/EnginForm";
 import { IcBack } from "@/lib/icons";
 
 export default function ModifierEngin() {
   const { id } = useParams<{ id: string }>();
-  const engin = useLiveQuery(() => db.engins.get(id).then((e) => e ?? null), [id]);
+  const { data: engin } = useEngin(id);
 
   if (engin === undefined) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   if (engin === null) {

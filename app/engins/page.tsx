@@ -1,17 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, enginTypeLabel } from "@/lib/db";
-import { amorcerDemoEngins, alerteEntretien } from "@/lib/engins";
+import { enginTypeLabel } from "@/lib/db";
+import { alerteEntretien } from "@/lib/engins";
+import { useEngins, useEntretiens } from "@/lib/queries/engins";
 import { IcTruck, IcPlus, IcChevron, IcCheck, IcWarning } from "@/lib/icons";
 
 export default function EnginsPage() {
-  useEffect(() => { amorcerDemoEngins(); }, []);
-
-  const engins = useLiveQuery(() => db.engins.orderBy("updatedAt").reverse().toArray(), []);
-  const entretiens = useLiveQuery(() => db.entretiens.toArray(), []);
+  const { data: engins } = useEngins();
+  const { data: entretiens } = useEntretiens();
 
   if (!engins || !entretiens) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 

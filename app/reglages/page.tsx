@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
+import { useChantiers } from "@/lib/queries/chantiers";
 import { exporterSauvegarde, importerSauvegarde, nomFichierSauvegarde, estimationStockage } from "@/lib/backup";
 import { downloadText } from "@/lib/export";
 import { formatTaille } from "@/lib/format";
 import CloudSection from "@/components/CloudSection";
+import EntrepriseSection from "@/components/EntrepriseSection";
+import EquipeSection from "@/components/EquipeSection";
+import MigrationSection from "@/components/MigrationSection";
 import { IcSettings, IcDownload, IcUpload, IcCloud, IcCheck, IcWifiOff } from "@/lib/icons";
 
 interface InstallPromptEvent extends Event {
@@ -23,7 +27,7 @@ export default function ReglagesPage() {
   const [installEvt, setInstallEvt] = useState<InstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
-  const nbChantiers = useLiveQuery(() => db.chantiers.count(), []);
+  const nbChantiers = useChantiers().data?.length;
   const nbGeoms = useLiveQuery(() => db.geometries.count(), []);
   const nbJournees = useLiveQuery(() => db.journees.count(), []);
   const nbPhotos = useLiveQuery(() => db.photos.count(), []);
@@ -142,6 +146,9 @@ export default function ReglagesPage() {
         )}
       </div>
 
+      {/* Mon entreprise (pour les devis/factures) */}
+      <EntrepriseSection />
+
       {/* Sauvegarde / restauration */}
       <div className="card pad">
         <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><IcDownload /> Sauvegarde des données</h3>
@@ -162,6 +169,12 @@ export default function ReglagesPage() {
 
       {/* Synchronisation cloud (Supabase) */}
       <CloudSection />
+
+      {/* Équipe (collaboration abatteur / débardeur) */}
+      <EquipeSection />
+
+      {/* Migration des données locales vers le nouveau serveur */}
+      <MigrationSection />
     </div>
   );
 }

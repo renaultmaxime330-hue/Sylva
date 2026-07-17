@@ -2,24 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useLiveQuery } from "dexie-react-hooks";
 import type * as Leaflet from "leaflet";
 import {
-  db, GEOM_TYPES, geomTypeInfo,
+  GEOM_TYPES, geomTypeInfo,
   type Chantier, type Geometrie, type GeomType, type GeoJSONGeometry,
 } from "@/lib/db";
 import {
   ajouterGeometrie, supprimerGeometrie, renommerGeometrie, surfaceHa, longueurM,
 } from "@/lib/geometries";
+import { useGeometries } from "@/lib/queries/geometries";
 import { modifierChantier, obtenirPosition } from "@/lib/chantiers";
 import { formatLongueur } from "@/lib/format";
+import { roleLabel, type Role } from "@/lib/profil";
+import { depuis, type Coequipier } from "@/lib/presence";
 import {
   toGeoJSON, toGPX, toKML, downloadText, nomFichier, parseGeoJSONGeometries,
 } from "@/lib/export";
 import type { ReactNode } from "react";
 import {
   IcPin, IcTrash, IcCheck, IcRuler, IcDoc, IcBack, IcEdit,
-  IcWarning, IcRoute, IcTruck, IcLogs,
+  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers,
 } from "@/lib/icons";
 
 type LApi = typeof Leaflet;
@@ -65,6 +67,28 @@ function makeBadge(L: LApi, type: GeomType, couleur: string): Leaflet.DivIcon {
   });
 }
 
+/* ---------- Coéquipiers en direct ---------- */
+const COULEUR_ROLE: Record<Role, string> = { abatteur: "#2E6B41", debardeur: "#A75F24" };
+
+function roleGlyph(r: Role): string {
+  return r === "debardeur"
+    // porteur / débardeuse
+    ? '<path d="M3 16V9a1.4 1.4 0 0 1 1.4-1.4h8L16.5 11H20a1.4 1.4 0 0 1 1.4 1.4V16"/><circle cx="7.5" cy="16.6" r="1.7"/><circle cx="16.5" cy="16.6" r="1.7"/>'
+    // résineux
+    : '<path d="M12 2.8 6.2 11h3.2l-3.9 5.4h13L14.6 11h3.2L12 2.8Z"/><line x1="12" y1="16.4" x2="12" y2="21.2"/>';
+}
+
+function makeLiveBadge(L: LApi, role: Role, couleur: string): Leaflet.DivIcon {
+  const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${roleGlyph(role)}</svg>`;
+  return L.divIcon({
+    className: "geo-badge-wrap",
+    html: `<span class="live-badge" style="background:${couleur}"><span class="live-ring" style="border-color:${couleur}"></span>${svg}</span>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    tooltipAnchor: [0, -17],
+  });
+}
+
 /* ---------- Fonds de carte (IGN Géoplateforme + OSM) ---------- */
 const ignWmts = (layer: string, format = "image/png") =>
   `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}` +
@@ -80,11 +104,13 @@ type BaseId = (typeof BASES)[number]["id"];
 const toLatLng = (p: [number, number]): [number, number] => [p[1], p[0]];
 
 export default function MapChantier({
-  chantier, readOnly = false, editHref,
+  chantier, readOnly = false, editHref, equipiers,
 }: {
   chantier: Chantier;
   readOnly?: boolean;
   editHref?: string;
+  /** Membres de l'équipe à afficher en direct (position partagée). */
+  equipiers?: Coequipier[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const LRef = useRef<LApi | null>(null);
@@ -93,6 +119,7 @@ export default function MapChantier({
   const cadastreRef = useRef<Leaflet.TileLayer | null>(null);
   const geomsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const draftLayerRef = useRef<Leaflet.LayerGroup | null>(null);
+  const equipeLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const posMarkerRef = useRef<Leaflet.CircleMarker | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -114,12 +141,16 @@ export default function MapChantier({
     msgTimer.current = setTimeout(() => setMsg(""), 4000);
   }
 
+  /** Signale une modif à l'équipe. Pour l'instant sans effet visible tant que
+      la Phase 7 (Socket.io) n'est pas branchée — chaque appareil voit les
+      changements au prochain chargement de la carte, via l'API. */
+  function annoncer(_action: "ajout" | "suppression" | "renommage", _typeGeom: GeomType, _nomGeom: string) {
+    // TODO Phase 7 : diffusion temps réel (Socket.io) aux coéquipiers.
+  }
+
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const geometries = useLiveQuery(
-    () => db.geometries.where("chantierId").equals(chantier.id).reverse().sortBy("createdAt"),
-    [chantier.id]
-  );
+  const { data: geometries } = useGeometries(chantier.id);
 
   /* ---- Initialisation ---- */
   useEffect(() => {
@@ -168,6 +199,7 @@ export default function MapChantier({
             nom = d.trim() || undefined;
           }
           void ajouterGeometrie(chantier.id, dt, { type: "Point", coordinates: p }, nom);
+          annoncer("ajout", dt, nom ?? "");
           void finishPoint(dt);
           return;
         }
@@ -289,6 +321,35 @@ export default function MapChantier({
     geomsLayerRef.current = group;
   }, [ready, geometries]);
 
+  /* ---- Coéquipiers en direct ---- */
+  useEffect(() => {
+    const L = LRef.current, map = mapRef.current;
+    if (!ready || !L || !map) return;
+    equipeLayerRef.current?.remove();
+    equipeLayerRef.current = null;
+    if (!equipiers || equipiers.length === 0) return;
+
+    const group = L.layerGroup();
+    for (const e of equipiers) {
+      if (e.lat == null || e.lng == null) continue;
+      const couleur = COULEUR_ROLE[e.role] ?? "#2563EB";
+      // Cercle de précision quand le GPS est approximatif
+      if (e.precisionM != null && e.precisionM > 25) {
+        L.circle([e.lat, e.lng], {
+          radius: e.precisionM, color: couleur, weight: 1, opacity: 0.5,
+          fillColor: couleur, fillOpacity: 0.08, interactive: false,
+        }).addTo(group);
+      }
+      L.marker([e.lat, e.lng], { icon: makeLiveBadge(L, e.role, couleur), zIndexOffset: 1000 })
+        .addTo(group)
+        .bindTooltip(`${e.nom} — ${roleLabel(e.role)}<br><span class="ll-sub">${depuis(e.maj)}</span>`, {
+          permanent: true, direction: "top", offset: [0, -6], className: "live-label",
+        });
+    }
+    group.addTo(map);
+    equipeLayerRef.current = group;
+  }, [ready, equipiers]);
+
   /* ---- Fond de carte ---- */
   useEffect(() => {
     const map = mapRef.current, b = baseRef.current;
@@ -367,6 +428,7 @@ export default function MapChantier({
     else if (info.geom === "LineString" && pts.length >= 2) geojson = { type: "LineString", coordinates: pts };
     if (!geojson) return;
     await ajouterGeometrie(chantier.id, dt, geojson);
+    annoncer("ajout", dt, "");
     // Pour une parcelle : calcule et applique directement la surface au chantier
     if (dt === "parcelle") {
       const ha = surfaceHa(geojson);
@@ -426,6 +488,17 @@ export default function MapChantier({
     }
   }
 
+  function centrerEquipe() {
+    const L = LRef.current, map = mapRef.current;
+    if (!L || !map) return;
+    const pts = (equipiers ?? [])
+      .filter((e) => e.lat != null && e.lng != null)
+      .map((e) => [e.lat!, e.lng!] as [number, number]);
+    if (pts.length === 0) return;
+    if (pts.length === 1) map.setView(pts[0], 15);
+    else map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 16 });
+  }
+
   function exporter(fmt: "geojson" | "gpx" | "kml") {
     const gs = geometries ?? [];
     if (fmt === "geojson") downloadText(nomFichier(chantier, "geojson"), toGeoJSON(chantier, gs), "application/geo+json");
@@ -452,6 +525,7 @@ export default function MapChantier({
 
   const drawInfo = drawType ? geomTypeInfo(drawType) : null;
   const geoms = geometries ?? [];
+  const equipeLocalisee = (equipiers ?? []).filter((e) => e.lat != null && e.lng != null);
 
   return (
     <div className="stack-gap">
@@ -464,6 +538,11 @@ export default function MapChantier({
         <button className="chip-btn" data-on={cadastre} onClick={() => setCadastre((v) => !v)}>Cadastre</button>
         <button className="chip-btn" onClick={maPosition}><IcPin /> Ma position</button>
         <button className="chip-btn" onClick={centrerToutes}>Recentrer</button>
+        {equipeLocalisee.length > 0 && (
+          <button className="chip-btn" onClick={centrerEquipe}>
+            <IcUsers /> Voir mon équipe ({equipeLocalisee.length})
+          </button>
+        )}
         <div style={{ flex: 1 }} />
         <div className="export-group">
           {!readOnly && (
@@ -572,11 +651,16 @@ export default function MapChantier({
                 {!readOnly && (
                   <>
                     <button className="iconbtn" aria-label="Renommer"
-                      onClick={() => { const n = prompt("Nom :", g.nom); if (n != null) renommerGeometrie(g.id, n); }}>
+                      onClick={() => {
+                        const n = prompt("Nom :", g.nom);
+                        if (n != null) { renommerGeometrie(g.id, n, chantier.id); annoncer("renommage", g.type, n); }
+                      }}>
                       <IcDoc />
                     </button>
                     <button className="iconbtn" aria-label="Supprimer"
-                      onClick={() => { if (confirm("Supprimer cet élément ?")) supprimerGeometrie(g.id); }}>
+                      onClick={() => {
+                        if (confirm("Supprimer cet élément ?")) { supprimerGeometrie(g.id, chantier.id); annoncer("suppression", g.type, g.nom); }
+                      }}>
                       <IcTrash />
                     </button>
                   </>

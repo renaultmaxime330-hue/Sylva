@@ -1,4 +1,6 @@
-import { db, newId, type Journee } from "./db";
+import type { Journee } from "./db";
+import { apiFetch } from "./client/auth";
+import { queryClient } from "./client/queryClient";
 
 /* ============================================================
    Production & temps de travail — journées, calculs, agrégations.
@@ -22,19 +24,38 @@ export function champsVidesJournee(chantierId = ""): JourneeInput {
   };
 }
 
+async function lireErreur(r: Response, defaut: string): Promise<never> {
+  const d = await r.json().catch(() => null);
+  throw new Error(d?.erreur ?? defaut);
+}
+
+function invalider(id?: string) {
+  void queryClient.invalidateQueries({ queryKey: ["journees"] });
+  if (id) void queryClient.invalidateQueries({ queryKey: ["journees", id] });
+}
+
 export async function creerJournee(data: JourneeInput): Promise<string> {
-  const now = new Date().toISOString();
-  const id = newId();
-  await db.journees.add({ ...data, id, createdAt: now, updatedAt: now, syncStatus: "local" });
-  return id;
+  const r = await apiFetch("/api/journees", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+  });
+  if (!r.ok) await lireErreur(r, "Impossible d'enregistrer la journée.");
+  const { journee } = await r.json();
+  invalider();
+  return journee.id as string;
 }
 
 export async function modifierJournee(id: string, data: Partial<JourneeInput>): Promise<void> {
-  await db.journees.update(id, { ...data, updatedAt: new Date().toISOString(), syncStatus: "local" });
+  const r = await apiFetch(`/api/journees/${id}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+  });
+  if (!r.ok) await lireErreur(r, "Impossible de modifier la journée.");
+  invalider(id);
 }
 
 export async function supprimerJournee(id: string): Promise<void> {
-  await db.journees.delete(id);
+  const r = await apiFetch(`/api/journees/${id}`, { method: "DELETE" });
+  if (!r.ok) await lireErreur(r, "Impossible de supprimer la journée.");
+  invalider(id);
 }
 
 /* ---------- Calculs sur une journée ---------- */
@@ -113,20 +134,21 @@ function startOfWeek(d: Date): Date {
   return x;
 }
 
-export function filtrePeriode(journees: Journee[], periode: "jour" | "semaine" | "mois" | "annee"): Journee[] {
+export type Periode = "jour" | "semaine" | "mois" | "annee";
+
+/** Une date (YYYY-MM-DD) tombe-t-elle dans la période courante ? */
+export function dansPeriode(dateISO: string, periode: Periode): boolean {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
-  const wStart = startOfWeek(now);
-  const ym = today.slice(0, 7);
-  const y = today.slice(0, 4);
-  return journees.filter((j) => {
-    if (periode === "jour") return j.date === today;
-    if (periode === "mois") return j.date.slice(0, 7) === ym;
-    if (periode === "annee") return j.date.slice(0, 4) === y;
-    // semaine
-    const jd = new Date(j.date + "T00:00:00");
-    return jd >= wStart && jd <= now;
-  });
+  if (periode === "jour") return dateISO === today;
+  if (periode === "mois") return dateISO.slice(0, 7) === today.slice(0, 7);
+  if (periode === "annee") return dateISO.slice(0, 4) === today.slice(0, 4);
+  const d = new Date(dateISO + "T00:00:00");
+  return d >= startOfWeek(now) && d <= now;
+}
+
+export function filtrePeriode(journees: Journee[], periode: Periode): Journee[] {
+  return journees.filter((j) => dansPeriode(j.date, periode));
 }
 
 /** Série m³ par jour sur les N derniers jours (pour le graphique). */
@@ -167,45 +189,4 @@ export function serieParMois(journees: Journee[]): { mois: string; label: string
     });
   }
   return out;
-}
-
-/* ---------- Jeu de démonstration ---------- */
-export async function amorcerDemoProduction(): Promise<void> {
-  const count = await db.journees.count();
-  if (count > 0) return;
-  const chantiers = await db.chantiers.toArray();
-  const actifs = chantiers.filter((c) => c.statut !== "a_faire");
-  if (actifs.length === 0) return;
-
-  const now = new Date();
-  const demo: Journee[] = [];
-  // ~12 journées sur les 20 derniers jours
-  const jours = [1, 2, 3, 4, 6, 7, 8, 9, 11, 13, 15, 18];
-  for (const back of jours) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - back);
-    if (d.getDay() === 0) continue; // pas le dimanche
-    const c = actifs[back % actifs.length];
-    const vol = Math.round((28 + Math.random() * 30) * 10) / 10;
-    const pins = Math.round(vol * (5 + Math.random() * 2));
-    const base = new Date().toISOString();
-    demo.push({
-      id: newId(),
-      chantierId: c.id,
-      date: d.toISOString().slice(0, 10),
-      volumeM3: vol,
-      nbPins: pins,
-      nbAutres: Math.round(Math.random() * 12),
-      heureDebut: "08:00",
-      heureFin: Math.random() > 0.5 ? "17:00" : "16:30",
-      pauseMin: 45,
-      hMachine: Math.round((5 + Math.random() * 2) * 10) / 10,
-      hDeplacement: Math.round((0.5 + Math.random()) * 10) / 10,
-      notes: "",
-      createdAt: base,
-      updatedAt: base,
-      syncStatus: "local",
-    });
-  }
-  await db.journees.bulkAdd(demo);
 }

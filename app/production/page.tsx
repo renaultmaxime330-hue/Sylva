@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
-import { amorcerDemo } from "@/lib/chantiers";
+import { useState } from "react";
+import { useChantiers } from "@/lib/queries/chantiers";
+import { useJournees } from "@/lib/queries/journees";
 import {
-  amorcerDemoProduction, agreger, filtrePeriode, serieParJour, serieParMois,
+  agreger, filtrePeriode, serieParJour, serieParMois,
   heuresTravaillees, rendementJournee, nbArbres, supprimerJournee,
 } from "@/lib/production";
 import { formatHeures, formatM3 } from "@/lib/format";
@@ -17,12 +16,8 @@ export default function ProductionPage() {
   const [filtreChantier, setFiltreChantier] = useState<string>("tous");
   const [vue, setVue] = useState<"jours" | "mois">("jours");
 
-  useEffect(() => {
-    (async () => { await amorcerDemo(); await amorcerDemoProduction(); })();
-  }, []);
-
-  const journees = useLiveQuery(() => db.journees.orderBy("date").reverse().toArray(), []);
-  const chantiers = useLiveQuery(() => db.chantiers.toArray(), []);
+  const { data: journees } = useJournees();
+  const { data: chantiers } = useChantiers();
 
   if (!journees || !chantiers) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 

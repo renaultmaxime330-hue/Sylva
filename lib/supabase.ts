@@ -21,10 +21,20 @@ export function getSupabase(): SupabaseClient | null {
 
 /* ---------- Authentification ---------- */
 
-export async function inscrire(email: string, password: string): Promise<{ session: Session | null; besoinConfirmation: boolean }> {
+/** Inscription : le rôle et le statut « chef d'entreprise » sont choisis à la création
+    du compte et stockés dans les métadonnées de l'utilisateur. */
+export async function inscrire(
+  email: string,
+  password: string,
+  profil: { nom: string; role: string; chefEntreprise: boolean }
+): Promise<{ session: Session | null; besoinConfirmation: boolean }> {
   const sb = getSupabase();
   if (!sb) throw new Error("Client indisponible");
-  const { data, error } = await sb.auth.signUp({ email, password });
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { data: { nom: profil.nom, role: profil.role, chef_entreprise: profil.chefEntreprise } },
+  });
   if (error) throw new Error(traduireErreur(error.message));
   return { session: data.session, besoinConfirmation: !data.session };
 }
