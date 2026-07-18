@@ -925,6 +925,78 @@
 .auth-panel { display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
 .auth-card { width: 100%; max-width: 420px; }
 
+/* ---------- Tableau de bord — carnet de chantier ----------
+   Rompt délibérément avec le motif « grille de tuiles + liste de cartes »
+   utilisé ailleurs (chantiers, clients, engins…) : une plaque d'en-tête
+   éditoriale gravée de courbes topographiques, une légende de mesures en
+   plaquettes (pas une grille uniforme), un journal en registre continu
+   plutôt qu'un empilement de cartes identiques. Ce vocabulaire (« plate »,
+   « legend », « carnet ») reste propre au tableau de bord — chaque module
+   aura sa propre composition, pas ce même gabarit réutilisé partout. */
+.dash-plate {
+  position: relative; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl);
+  box-shadow: var(--shadow);
+  padding: 40px 44px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+}
+.dash-plate::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-radial-gradient(circle at 106% -25%, transparent 0 34px, color-mix(in srgb, var(--accent) 11%, transparent) 34px calc(34px + 1.5px));
+}
+.dash-plate-meta { position: relative; max-width: 560px; }
+.dash-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); font-weight: 700; margin-bottom: 14px;
+}
+.dash-eyebrow::before {
+  content: ""; width: 22px; height: 2px; border-radius: 2px; flex: none;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 20%, transparent));
+}
+.dash-title {
+  font-family: var(--font-display); font-optical-sizing: auto;
+  font-size: clamp(26px, 3.4vw, 38px); font-weight: 600; letter-spacing: -.008em; line-height: 1.14;
+}
+.dash-sub { color: var(--text-muted); margin-top: 10px; font-size: 15px; max-width: 48ch; }
+.dash-plate .btn { position: relative; flex: none; }
+
+/* Légende de mesures — rail de plaquettes indexées par couleur, pas des tuiles identiques */
+.dash-legend {
+  display: flex; flex-wrap: wrap; gap: 1px;
+  background: var(--border); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden;
+}
+.dash-legend .li { flex: 1 1 150px; min-width: 150px; background: var(--surface); padding: 16px 20px; border-left: 3px solid var(--accent); }
+.dash-legend .li .lk {
+  display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 700;
+}
+.dash-legend .li .lv { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.dash-legend .li .lv small { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-left: 3px; }
+
+/* Journal des chantiers — un seul registre continu, pas des cartes empilées */
+.dash-carnet-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; }
+.dash-carnet-head h2 { font-family: var(--font-display); font-optical-sizing: auto; font-size: 21px; font-weight: 600; letter-spacing: -.01em; flex: 1; }
+.dash-carnet { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.dash-row {
+  display: flex; align-items: center; gap: 16px; padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--dur) var(--ease);
+}
+.dash-row:last-child { border-bottom: none; }
+.dash-row:hover { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.dash-row .idx { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-muted); font-weight: 700; flex: none; width: 20px; font-variant-numeric: tabular-nums; }
+.dash-row .nom { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 600; font-size: 17px; flex: 1; min-width: 0; }
+.dash-row .meta { color: var(--text-muted); font-size: 13.5px; flex: none; display: flex; gap: 6px; }
+.dash-row .chev { color: var(--text-muted); flex: none; display: inline-flex; transition: transform var(--dur) var(--ease), color var(--dur) var(--ease); }
+.dash-row .chev svg { width: 18px; height: 18px; }
+.dash-row:hover .chev { transform: translateX(3px); color: var(--accent); }
+
+@media (max-width: 720px) {
+  .dash-plate { padding: 26px 22px; }
+  .dash-row .meta { display: none; }
+}
+
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {
   .sidebar { display: none; }

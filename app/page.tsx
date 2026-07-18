@@ -5,7 +5,19 @@ import { totalVolume } from "@/lib/db";
 import { useChantiers } from "@/lib/queries/chantiers";
 import StatutPill from "@/components/StatutPill";
 import { formatSurface } from "@/lib/format";
-import { IcSite, IcPlus, IcChevron, IcRuler, IcCheck, IcClock, IcChart } from "@/lib/icons";
+import { IcSite, IcPlus, IcChevron } from "@/lib/icons";
+
+function dateDuJour(): string {
+  return new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function titrePlate(enCours: number, aFaire: number, termine: number, total: number): string {
+  if (total === 0) return "Prêt pour le premier chantier";
+  if (enCours > 0) return `${enCours} chantier${enCours > 1 ? "s" : ""} en cours`;
+  if (aFaire > 0) return `${aFaire} chantier${aFaire > 1 ? "s" : ""} à préparer`;
+  if (termine > 0) return "Tous les chantiers sont terminés";
+  return "Carnet à jour";
+}
 
 export default function Dashboard() {
   const { data: chantiers, isError, error } = useChantiers();
@@ -33,43 +45,43 @@ export default function Dashboard() {
 
   return (
     <div className="stack-gap">
-      <div className="page-head">
-        <div className="titles">
-          <p className="eyebrow">Tableau de bord</p>
-          <h1>Bonjour 👋</h1>
-          <p className="sub">Voici l'état de tes chantiers aujourd'hui.</p>
+      <header className="dash-plate">
+        <div className="dash-plate-meta">
+          <span className="dash-eyebrow">Carnet de chantier · {dateDuJour()}</span>
+          <h1 className="dash-title">{titrePlate(enCours, aFaire, termine, chantiers.length)}</h1>
+          <p className="dash-sub">
+            {surfaceTotale > 0 || volumeTotal > 0
+              ? `${surfaceTotale.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} ha suivis, ${volumeTotal.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} m³ produits à ce jour.`
+              : "Crée un chantier pour commencer à tenir le carnet."}
+          </p>
         </div>
-        <div className="actions">
-          <Link href="/chantiers/nouveau" className="btn primary big"><IcPlus /> Nouveau chantier</Link>
-        </div>
-      </div>
+        <Link href="/chantiers/nouveau" className="btn primary big"><IcPlus /> Nouveau chantier</Link>
+      </header>
 
-      <div className="stats">
-        <div className="stat">
-          <div className="k"><IcClock /> En cours</div>
-          <div className="v">{enCours}</div>
+      {chantiers.length > 0 && (
+        <div className="dash-legend">
+          <div className="li" style={{ borderLeftColor: "var(--st-todo)" }}>
+            <span className="lk">À faire</span>
+            <div className="lv">{aFaire}</div>
+          </div>
+          <div className="li" style={{ borderLeftColor: "var(--st-done)" }}>
+            <span className="lk">Terminés</span>
+            <div className="lv">{termine}</div>
+          </div>
+          <div className="li" style={{ borderLeftColor: "var(--accent)" }}>
+            <span className="lk">Surface totale</span>
+            <div className="lv">{surfaceTotale.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small>ha</small></div>
+          </div>
+          <div className="li" style={{ borderLeftColor: "var(--wood)" }}>
+            <span className="lk">m³ produits</span>
+            <div className="lv">{volumeTotal.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small>m³</small></div>
+          </div>
         </div>
-        <div className="stat">
-          <div className="k"><IcSite /> À faire</div>
-          <div className="v">{aFaire}</div>
-        </div>
-        <div className="stat">
-          <div className="k"><IcCheck /> Terminés</div>
-          <div className="v">{termine}</div>
-        </div>
-        <div className="stat">
-          <div className="k"><IcRuler /> Surface totale</div>
-          <div className="v">{surfaceTotale.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small>ha</small></div>
-        </div>
-        <div className="stat">
-          <div className="k"><IcChart /> m³ produits</div>
-          <div className="v">{volumeTotal.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small>m³</small></div>
-        </div>
-      </div>
+      )}
 
       <section>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", flex: 1 }}>Chantiers récents</h2>
+        <div className="dash-carnet-head">
+          <h2>Journal des chantiers</h2>
           <Link href="/chantiers" className="btn ghost">Tout voir <IcChevron /></Link>
         </div>
 
@@ -81,18 +93,16 @@ export default function Dashboard() {
             <Link href="/chantiers/nouveau" className="btn primary big"><IcPlus /> Créer un chantier</Link>
           </div>
         ) : (
-          <div className="list">
-            {recents.map((c) => (
-              <Link key={c.id} href={`/chantiers/${c.id}`} className="row-card">
-                <div className="glyph"><IcSite /></div>
-                <div className="body">
-                  <div className="t">{c.nom}</div>
-                  <div className="m">
-                    <span>{c.commune || "Commune ?"}</span>
-                    {c.surfaceHa != null && <>·<span>{formatSurface(c.surfaceHa)}</span></>}
-                    {c.essence && <>·<span>{c.essence}</span></>}
-                  </div>
-                </div>
+          <div className="dash-carnet">
+            {recents.map((c, i) => (
+              <Link key={c.id} href={`/chantiers/${c.id}`} className="dash-row">
+                <span className="idx">{String(i + 1).padStart(2, "0")}</span>
+                <span className="nom">{c.nom}</span>
+                <span className="meta">
+                  <span>{c.commune || "Commune ?"}</span>
+                  {c.surfaceHa != null && <>·<span>{formatSurface(c.surfaceHa)}</span></>}
+                  {c.essence && <>·<span>{c.essence}</span></>}
+                </span>
                 <StatutPill statut={c.statut} sm />
                 <span className="chev"><IcChevron /></span>
               </Link>
