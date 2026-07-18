@@ -6,7 +6,7 @@ import type { DocType } from "@/lib/db";
 import { useFactures } from "@/lib/queries/factures";
 import { totauxDoc, statutDocInfo } from "@/lib/facturation";
 import { formatDate } from "@/lib/format";
-import { IcReceipt, IcPlus, IcChevron } from "@/lib/icons";
+import { IcReceipt, IcPlus } from "@/lib/icons";
 
 const eur = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " €";
 
@@ -51,24 +51,37 @@ export default function FacturesPage() {
           </div>
         </div>
       ) : (
-        <div className="list">
-          {filtres.map((d) => {
-            const t = totauxDoc(d);
-            const s = statutDocInfo(d.statut);
-            return (
-              <Link key={d.id} href={`/factures/${d.id}`} className="row-card">
-                <div className="glyph"><IcReceipt /></div>
-                <div className="body">
-                  <div className="t">{d.type === "devis" ? "Devis" : "Facture"} {d.numero} <span className="muted" style={{ fontWeight: 500 }}>· {d.clientNom}</span></div>
-                  <div className="m">
-                    <span>{formatDate(d.date)}</span>·<span>{d.lignes.length} ligne{d.lignes.length > 1 ? "s" : ""}</span>·<span style={{ fontWeight: 700, color: "var(--accent-strong)" }}>{eur(t.ttc)} TTC</span>
-                  </div>
-                </div>
-                <span className={`pill ${s.cls} sm`}>{s.label}</span>
-                <span className="chev"><IcChevron /></span>
-              </Link>
-            );
-          })}
+        <div className="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Type</th>
+                <th>Client</th>
+                <th>Date</th>
+                <th style={{ textAlign: "right" }}>Lignes</th>
+                <th style={{ textAlign: "right" }}>Montant TTC</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtres.map((d) => {
+                const t = totauxDoc(d);
+                const s = statutDocInfo(d.statut);
+                return (
+                  <tr key={d.id}>
+                    <td><Link href={`/factures/${d.id}`} className="doc-num-link">{d.numero}</Link></td>
+                    <td className="doc-type-tag">{d.type === "devis" ? "Devis" : "Facture"}</td>
+                    <td>{d.clientNom}</td>
+                    <td>{formatDate(d.date)}</td>
+                    <td style={{ textAlign: "right" }}>{d.lignes.length}</td>
+                    <td style={{ textAlign: "right" }}><span className="doc-ttc">{eur(t.ttc)}</span></td>
+                    <td><span className={`pill ${s.cls} sm`}>{s.label}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

@@ -1095,6 +1095,16 @@
   .tech-marque { display: none; }
 }
 
+/* ---------- Factures — registre sobre et administratif ----------
+   Personnalité volontairement en retrait des autres modules : un vrai
+   tableau comptable (numéros en mono, montants alignés à droite,
+   quasiment pas de couleur hors le statut) plutôt qu'une liste de cartes
+   illustrées — ce sont des documents formels, pas du terrain. */
+.doc-num-link { font-family: var(--font-mono); font-weight: 700; color: var(--text); text-decoration: none; }
+.doc-num-link:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.doc-type-tag { font-size: 12px; color: var(--text-muted); }
+.doc-ttc { font-weight: 800; font-variant-numeric: tabular-nums; }
+
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {
   .sidebar { display: none; }
