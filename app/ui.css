@@ -1028,6 +1028,52 @@
   .terrain-surf .u { display: block; margin-left: 0; }
 }
 
+/* ---------- Engins — fiche technique ----------
+   Personnalité "technique" : compteur d'heures façon afficheur mécanique
+   (panneau sombre quel que soit le thème, comme un vrai compteur horaire
+   de machine), jauge d'entretien plutôt qu'une pastille binaire, type en
+   étiquette de caractéristique plutôt qu'en texte courant. */
+.tech-list { display: grid; gap: 12px; }
+.tech-row {
+  display: flex; align-items: center; gap: 18px; padding: 15px 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.tech-row:hover { border-color: color-mix(in srgb, var(--accent) 32%, var(--border)); box-shadow: var(--shadow); }
+.tech-row[data-actif="false"] { opacity: .55; }
+.tech-meter {
+  flex: none; width: 88px; padding: 8px 6px; border-radius: var(--r-sm); text-align: center;
+  background: color-mix(in srgb, black 90%, var(--wood) 10%); border: 1px solid rgba(0, 0, 0, .4);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5);
+}
+.tech-meter .hv { font-family: var(--font-mono); font-size: 17px; font-weight: 700; color: #B8E6C2; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+.tech-meter .hu { font-family: var(--font-mono); font-size: 9px; color: #6B9C78; text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+.tech-body { flex: 1; min-width: 0; }
+.tech-body .t { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 600; font-size: 17px; }
+.tech-body .m { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.tech-type {
+  font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
+  color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; flex: none;
+}
+.tech-marque { color: var(--text-muted); font-size: 13.5px; }
+.tech-gauge { flex: none; width: 150px; }
+.tech-gauge .gh { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; white-space: nowrap; }
+.tech-gauge .gh b { display: inline-flex; align-items: center; gap: 3px; }
+.tech-gauge .gh b svg { width: 12px; height: 12px; }
+.tech-gauge .gbar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.tech-gauge .gbar > div { height: 100%; border-radius: 999px; transition: width .3s var(--ease); }
+.tech-gauge[data-niv="ok"] .gh b, .tech-gauge[data-niv="ok"] .gbar > div { color: var(--st-done); background: var(--st-done); }
+.tech-gauge[data-niv="bientot"] .gh b, .tech-gauge[data-niv="bientot"] .gbar > div { color: var(--st-doing); background: var(--st-doing); }
+.tech-gauge[data-niv="depasse"] .gh b, .tech-gauge[data-niv="depasse"] .gbar > div { color: var(--danger); background: var(--danger); }
+.tech-chev { flex: none; color: var(--text-muted); display: inline-flex; transition: transform var(--dur) var(--ease), color var(--dur) var(--ease); }
+.tech-chev svg { width: 18px; height: 18px; }
+.tech-row:hover .tech-chev { transform: translateX(3px); color: var(--accent); }
+@media (max-width: 720px) {
+  .tech-gauge { display: none; }
+  .tech-marque { display: none; }
+}
+
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {
   .sidebar { display: none; }

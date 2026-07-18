@@ -41,24 +41,35 @@ export default function EnginsPage() {
           <Link href="/engins/nouveau" className="btn primary big"><IcPlus /> Ajouter un engin</Link>
         </div>
       ) : (
-        <div className="list">
+        <div className="tech-list">
           {engins.map((e) => {
             const a = alerteEntretien(e, entretiens.filter((x) => x.enginId === e.id));
+            const pct = a.niveau !== "aucun" && e.seuilEntretienH
+              ? Math.max(0, Math.min(100, ((a.heuresDepuis ?? 0) / e.seuilEntretienH) * 100))
+              : null;
             return (
-              <Link key={e.id} href={`/engins/${e.id}`} className="row-card">
-                <div className="glyph"><IcTruck /></div>
-                <div className="body">
+              <Link key={e.id} href={`/engins/${e.id}`} className="tech-row" data-actif={e.actif}>
+                <div className="tech-meter">
+                  <div className="hv">{e.heuresTotal != null ? e.heuresTotal.toLocaleString("fr-FR") : "—"}</div>
+                  <div className="hu">heures</div>
+                </div>
+                <div className="tech-body">
                   <div className="t">{e.nom} {!e.actif && <span className="muted" style={{ fontWeight: 500 }}>· hors service</span>}</div>
                   <div className="m">
-                    <span>{enginTypeLabel(e.type)}</span>
-                    {e.marque && <>·<span>{e.marque}</span></>}
-                    {e.heuresTotal != null && <>·<span>{e.heuresTotal.toLocaleString("fr-FR")} h</span></>}
+                    <span className="tech-type">{enginTypeLabel(e.type)}</span>
+                    {e.marque && <span className="tech-marque">{e.marque}{e.modele ? ` ${e.modele}` : ""}</span>}
                   </div>
                 </div>
-                {a.niveau === "depasse" && <span className="pill sm" style={{ color: "var(--danger)", background: "var(--danger-bg)" }}><IcWarning /> Entretien dépassé</span>}
-                {a.niveau === "bientot" && <span className="pill doing sm"><IcWarning /> Entretien dans {a.reste} h</span>}
-                {a.niveau === "ok" && <span className="pill done sm"><IcCheck /> À jour</span>}
-                <span className="chev"><IcChevron /></span>
+                {pct != null && (
+                  <div className="tech-gauge" data-niv={a.niveau}>
+                    <div className="gh">
+                      <span>Entretien</span>
+                      <b>{a.niveau === "depasse" ? <><IcWarning /> dépassé</> : a.niveau === "bientot" ? <><IcWarning /> {a.reste} h</> : <><IcCheck /> à jour</>}</b>
+                    </div>
+                    <div className="gbar"><div style={{ width: `${pct}%` }} /></div>
+                  </div>
+                )}
+                <span className="tech-chev"><IcChevron /></span>
               </Link>
             );
           })}
