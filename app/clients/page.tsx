@@ -5,7 +5,16 @@ import { useState } from "react";
 import { chantiersDeClient } from "@/lib/clients";
 import { useClients } from "@/lib/queries/clients";
 import { useChantiers } from "@/lib/queries/chantiers";
-import { IcUsers, IcPlus, IcChevron, IcSearch, IcSite } from "@/lib/icons";
+import { IcUsers, IcPlus, IcSearch, IcSite } from "@/lib/icons";
+
+const PARTICULES = new Set(["de", "du", "des", "d", "la", "le", "les", "m", "mme", "mlle"]);
+function initiales(nom: string): string {
+  const mots = nom.trim().split(/\s+/).map((w) => w.replace(/[.,']/g, "")).filter(Boolean);
+  const signif = mots.filter((w) => !PARTICULES.has(w.toLowerCase()));
+  const base = signif.length > 0 ? signif : mots;
+  if (base.length >= 2) return (base[0][0] + base[1][0]).toUpperCase();
+  return (base[0] || "?").slice(0, 2).toUpperCase();
+}
 
 export default function ClientsPage() {
   const [q, setQ] = useState("");
@@ -46,21 +55,20 @@ export default function ClientsPage() {
           {clients.length === 0 && <Link href="/clients/nouveau" className="btn primary big"><IcPlus /> Créer un client</Link>}
         </div>
       ) : (
-        <div className="list">
+        <div className="contact-grid">
           {filtres.map((c) => {
             const nb = chantiersDeClient(c, chantiers).length;
             return (
-              <Link key={c.id} href={`/clients/${c.id}`} className="row-card">
-                <div className="glyph"><IcUsers /></div>
-                <div className="body">
-                  <div className="t">{c.nom}</div>
-                  <div className="m">
+              <Link key={c.id} href={`/clients/${c.id}`} className="contact-card">
+                <div className="contact-avatar">{initiales(c.nom)}</div>
+                <div>
+                  <div className="contact-name">{c.nom}</div>
+                  <div className="contact-meta">
                     {c.commune && <span>{c.commune}</span>}
-                    {c.telephone && <>·<span>{c.telephone}</span></>}
-                    <>·<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IcSite style={{ width: 13, height: 13 }} /> {nb} chantier{nb > 1 ? "s" : ""}</span></>
+                    {c.telephone && <span>{c.telephone}</span>}
                   </div>
                 </div>
-                <span className="chev"><IcChevron /></span>
+                <div className="contact-rel"><IcSite /> {nb > 0 ? `${nb} chantier${nb > 1 ? "s" : ""} ensemble` : "Aucun chantier encore"}</div>
               </Link>
             );
           })}

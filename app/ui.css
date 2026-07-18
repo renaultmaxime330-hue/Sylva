@@ -1105,6 +1105,33 @@
 .doc-type-tag { font-size: 12px; color: var(--text-muted); }
 .doc-ttc { font-weight: 800; font-variant-numeric: tabular-nums; }
 
+/* ---------- Clients — carnet d'adresses ----------
+   Personnalité "relation" : une grille de fiches contact avec avatar
+   d'initiales, pas une liste plate — casse volontairement le motif
+   "ligne + chevron" utilisé par les autres modules. */
+.contact-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.contact-card {
+  display: flex; flex-direction: column; gap: 12px; padding: 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.contact-card:hover { border-color: color-mix(in srgb, var(--accent) 34%, var(--border)); box-shadow: var(--shadow); transform: translateY(-2px); }
+.contact-avatar {
+  width: 50px; height: 50px; border-radius: 50%; flex: none;
+  background: linear-gradient(160deg, var(--accent-soft), color-mix(in srgb, var(--accent-soft) 55%, var(--surface)));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-optical-sizing: auto; font-weight: 600; font-size: 18px; color: var(--accent-strong);
+}
+.contact-name { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 600; font-size: 17.5px; }
+.contact-meta { color: var(--text-muted); font-size: 13.5px; display: flex; flex-direction: column; gap: 3px; }
+.contact-rel {
+  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--accent-strong); font-weight: 700;
+}
+.contact-rel svg { width: 15px; height: 15px; }
+
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {
   .sidebar { display: none; }
