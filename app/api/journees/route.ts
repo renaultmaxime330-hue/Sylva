@@ -4,6 +4,7 @@ import { db } from "@/lib/server/db/client";
 import { journees, chantiers } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { journeeSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 export async function GET(req: Request) {
   const ctx = await contexteEquipe(req);
@@ -24,5 +25,6 @@ export async function POST(req: Request) {
   if (!ch) return NextResponse.json({ erreur: "Chantier introuvable." }, { status: 404 });
 
   const [row] = await db.insert(journees).values({ ...parsed.data, teamId: ctx.teamId, createdBy: ctx.u.id }).returning();
+  emettreEquipe(ctx.teamId, "journees", row.id, "create");
   return NextResponse.json({ journee: row });
 }

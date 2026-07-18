@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/server/db/client";
 import { geometries } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -20,6 +21,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const [row] = await db.update(geometries).set({ nom: parsed.data.nom, updatedAt: sql`now()` })
     .where(and(eq(geometries.id, id), eq(geometries.teamId, ctx.teamId))).returning();
   if (!row) return NextResponse.json({ erreur: "Tracé introuvable." }, { status: 404 });
+  emettreEquipe(ctx.teamId, "geometries", row.id, "update");
   return NextResponse.json({ geometrie: row });
 }
 
@@ -28,5 +30,6 @@ export async function DELETE(req: Request, { params }: Ctx) {
   if (estErreur(ctx)) return ctx;
   const { id } = await params;
   await db.delete(geometries).where(and(eq(geometries.id, id), eq(geometries.teamId, ctx.teamId)));
+  emettreEquipe(ctx.teamId, "geometries", id, "delete");
   return NextResponse.json({ ok: true });
 }

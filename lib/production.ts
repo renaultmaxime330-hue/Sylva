@@ -6,7 +6,7 @@ import { queryClient } from "./client/queryClient";
    Production & temps de travail — journées, calculs, agrégations.
    ============================================================ */
 
-export type JourneeInput = Omit<Journee, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type JourneeInput = Omit<Journee, "id" | "createdAt" | "updatedAt">;
 
 export function champsVidesJournee(chantierId = ""): JourneeInput {
   return {

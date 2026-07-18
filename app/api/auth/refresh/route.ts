@@ -7,6 +7,7 @@ import {
   COOKIE_RAFRAICHISSEMENT, optionsCookieRafraichissement, nettoyerAncienneVarianteCookie,
 } from "@/lib/server/auth/emettre";
 import { limiteAtteinte, enregistrerTentative } from "@/lib/server/auth/rateLimit";
+import { tracer } from "@/lib/server/audit";
 
 /* Rotation à chaque usage, avec détection de réutilisation : si un jeton déjà
    révoqué (donc déjà consommé une première fois) est présenté à nouveau,
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
     await db.update(refreshTokens).set({ revokedAt: sql`now()` })
       .where(and(eq(refreshTokens.userId, rt.userId), isNull(refreshTokens.revokedAt)));
     enregistrerTentative(cle);
+    tracer({ userId: rt.userId, action: "auth.vol_detecte", req });
     const res = NextResponse.json({ erreur: "Session invalide — reconnecte-toi." }, { status: 401 });
     res.cookies.delete({ name: COOKIE_RAFRAICHISSEMENT, path: "/" });
     nettoyerAncienneVarianteCookie(res);

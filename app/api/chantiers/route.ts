@@ -4,6 +4,7 @@ import { db } from "@/lib/server/db/client";
 import { chantiers } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { chantierSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 export async function GET(req: Request) {
   const ctx = await contexteEquipe(req);
@@ -22,5 +23,6 @@ export async function POST(req: Request) {
   const [row] = await db.insert(chantiers).values({
     ...parsed.data, teamId: ctx.teamId, createdBy: ctx.u.id,
   }).returning();
+  emettreEquipe(ctx.teamId, "chantiers", row.id, "create");
   return NextResponse.json({ chantier: row });
 }

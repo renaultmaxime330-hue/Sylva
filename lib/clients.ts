@@ -2,7 +2,7 @@ import type { Client, Chantier } from "./db";
 import { apiFetch } from "./client/auth";
 import { queryClient } from "./client/queryClient";
 
-export type ClientInput = Omit<Client, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type ClientInput = Omit<Client, "id" | "createdAt" | "updatedAt">;
 
 export function champsVidesClient(): ClientInput {
   return { nom: "", adresse: "", commune: "", telephone: "", email: "", notes: "" };

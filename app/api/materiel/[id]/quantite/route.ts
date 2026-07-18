@@ -4,6 +4,8 @@ import { db } from "@/lib/server/db/client";
 import { materiel } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { ajusterQuantiteSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
+import { recalculerAlertes } from "@/lib/server/recalculerAlertes";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -25,5 +27,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     .where(and(eq(materiel.id, id), eq(materiel.teamId, ctx.teamId)))
     .returning();
   if (!row) return NextResponse.json({ erreur: "Article introuvable." }, { status: 404 });
+  emettreEquipe(ctx.teamId, "materiel", row.id, "update");
+  void recalculerAlertes(ctx.teamId);
   return NextResponse.json({ materiel: row });
 }

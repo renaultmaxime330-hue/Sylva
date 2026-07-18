@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { useNotifs } from "@/lib/queries/notifs";
 import {
   IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck,
   IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt,
@@ -74,10 +73,20 @@ function ThemeButton() {
   );
 }
 
+/* La page de connexion doit être la seule chose visible tant qu'on n'est pas
+   authentifié — pas la coquille applicative (sidebar/nav) autour, qui
+   donnerait l'impression d'un accès déjà acquis avant de s'être connecté. */
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  if (pathname === "/connexion") return <>{children}</>;
+  return <ShellAuthentifie>{children}</ShellAuthentifie>;
+}
+
+function ShellAuthentifie({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const online = useOnline();
-  const nonLues = useLiveQuery(() => db.notifs.where("lu").equals(0).count(), [], 0);
+  const { data: notifs } = useNotifs();
+  const nonLues = notifs?.filter((n) => !n.lu).length ?? 0;
 
   return (
     <div className="shell">
@@ -123,7 +132,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <ThemeButton />
           </div>
           <div className="muted" style={{ fontSize: 12, padding: "8px 12px" }}>
-            {online ? "En ligne · données locales" : "Hors-ligne · tout est sauvegardé"}
+            {online ? "En ligne" : "Hors-ligne — connexion nécessaire"}
           </div>
         </div>
       </aside>

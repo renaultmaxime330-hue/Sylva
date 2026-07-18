@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
 import { supprimerClient, chantiersDeClient } from "@/lib/clients";
 import { useClient } from "@/lib/queries/clients";
 import { useChantiers } from "@/lib/queries/chantiers";
+import { useJournees } from "@/lib/queries/journees";
+import { useFinances } from "@/lib/queries/finances";
 import { bilan } from "@/lib/finances";
 import StatutPill from "@/components/StatutPill";
 import { IcBack, IcEdit, IcTrash, IcUsers, IcChevron, IcSite, IcChart, IcEuro } from "@/lib/icons";
@@ -19,8 +19,8 @@ export default function FicheClient() {
 
   const { data: client } = useClient(id);
   const { data: chantiers } = useChantiers();
-  const journees = useLiveQuery(() => db.journees.toArray(), []);
-  const finances = useLiveQuery(() => db.finances.toArray(), []);
+  const { data: journees } = useJournees();
+  const { data: finances } = useFinances();
 
   if (client === undefined || !chantiers || !journees || !finances) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   if (client === null) {

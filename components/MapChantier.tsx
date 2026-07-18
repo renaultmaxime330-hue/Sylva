@@ -15,6 +15,7 @@ import { modifierChantier, obtenirPosition } from "@/lib/chantiers";
 import { formatLongueur } from "@/lib/format";
 import { roleLabel, type Role } from "@/lib/profil";
 import { depuis, type Coequipier } from "@/lib/presence";
+import { emettre } from "@/lib/client/socket";
 import {
   toGeoJSON, toGPX, toKML, downloadText, nomFichier, parseGeoJSONGeometries,
 } from "@/lib/export";
@@ -141,11 +142,11 @@ export default function MapChantier({
     msgTimer.current = setTimeout(() => setMsg(""), 4000);
   }
 
-  /** Signale une modif à l'équipe. Pour l'instant sans effet visible tant que
-      la Phase 7 (Socket.io) n'est pas branchée — chaque appareil voit les
-      changements au prochain chargement de la carte, via l'API. */
-  function annoncer(_action: "ajout" | "suppression" | "renommage", _typeGeom: GeomType, _nomGeom: string) {
-    // TODO Phase 7 : diffusion temps réel (Socket.io) aux coéquipiers.
+  /** Signale une modif de carte à l'équipe en temps réel. L'identité (auteur,
+      rôle) est ajoutée côté serveur d'après le jeton du socket — jamais par
+      le client, pour ne jamais pouvoir être usurpée. */
+  function annoncer(action: "ajout" | "suppression" | "renommage", typeGeom: GeomType, nomGeom: string) {
+    emettre("carte:evenement", { action, typeGeom, nomGeom, chantierId: chantier.id, chantierNom: chantier.nom });
   }
 
   const fileRef = useRef<HTMLInputElement>(null);

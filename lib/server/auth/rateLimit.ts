@@ -36,3 +36,18 @@ export function enregistrerTentative(cle: string): void {
 export function reinitialiserTentatives(cle: string): void {
   tentatives.delete(cle);
 }
+
+/* Limite générique (routes de mutation de données, équipes…) — check-and-record
+   en un seul appel, contrairement à limiteAtteinte/enregistrerTentative qui
+   sont séparées pour le cas login (on ne veut enregistrer qu'après un échec
+   avéré). Seuil large : le but est de freiner un bouclage anormal (bug
+   client, script), pas de brider un usage normal — déjà stress-testé avec
+   des clics rapides successifs sur l'ajustement de stock. */
+export function limiteMutationDepassee(cle: string, max = 60, fenetreMs = 60_000): boolean {
+  const maintenant = Date.now();
+  const liste = (tentatives.get(cle) ?? []).filter((t) => maintenant - t < fenetreMs);
+  if (liste.length >= max) { tentatives.set(cle, liste); return true; }
+  liste.push(maintenant);
+  tentatives.set(cle, liste);
+  return false;
+}

@@ -7,6 +7,7 @@ import { hacherMotDePasse } from "@/lib/server/auth/password";
 import {
   emettreJetons, optionsCookieRafraichissement, nettoyerAncienneVarianteCookie, COOKIE_RAFRAICHISSEMENT,
 } from "@/lib/server/auth/emettre";
+import { tracer } from "@/lib/server/audit";
 
 const corps = z.object({
   email: z.string().trim().toLowerCase().email("E-mail invalide"),
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     id: users.id, email: users.email, nom: users.nom, role: users.role,
   });
 
+  tracer({ userId: u.id, action: "auth.register", req });
   const { accessToken, refreshToken, expiresAt } = await emettreJetons(u);
   const res = NextResponse.json({ user: u, accessToken });
   res.cookies.set(COOKIE_RAFRAICHISSEMENT, refreshToken, optionsCookieRafraichissement(expiresAt));

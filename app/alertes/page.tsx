@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, type NotifType } from "@/lib/db";
+import type { NotifType } from "@/lib/db";
+import { useNotifs } from "@/lib/queries/notifs";
 import {
   marquerLu, marquerToutLu, supprimerNotif, viderNotifs, notifInfo, quand,
 } from "@/lib/notifications";
@@ -26,12 +26,12 @@ function IcNotif({ type }: { type: NotifType }) {
 
 export default function AlertesPage() {
   const [filtre, setFiltre] = useState<NotifType | "toutes">("toutes");
-  const notifs = useLiveQuery(() => db.notifs.orderBy("createdAt").reverse().toArray(), []);
+  const { data: notifs } = useNotifs();
 
   if (!notifs) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 
   const liste = filtre === "toutes" ? notifs : notifs.filter((n) => n.type === filtre);
-  const nonLues = notifs.filter((n) => n.lu === 0).length;
+  const nonLues = notifs.filter((n) => !n.lu).length;
 
   return (
     <div className="stack-gap">
@@ -84,7 +84,7 @@ export default function AlertesPage() {
                 <span className="nglyph" style={{ background: info.couleur }}><IcNotif type={n.type} /></span>
                 <div className="jbody">
                   <div className="t">
-                    {n.lu === 0 && <span className="npoint" aria-label="Non lue" />}
+                    {!n.lu && <span className="npoint" aria-label="Non lue" />}
                     {n.titre}
                   </div>
                   <div className="m muted">{n.detail}</div>
@@ -93,7 +93,7 @@ export default function AlertesPage() {
               </>
             );
             return (
-              <div className={"notif-row" + (n.lu === 0 ? " neuve" : "")} key={n.id}>
+              <div className={"notif-row" + (!n.lu ? " neuve" : "")} key={n.id}>
                 {n.href ? (
                   <Link href={n.href} className="nlien" onClick={() => marquerLu(n.id)}>
                     {corps}
@@ -103,7 +103,7 @@ export default function AlertesPage() {
                   <div className="nlien">{corps}</div>
                 )}
                 <div className="jactions">
-                  {n.lu === 0 && (
+                  {!n.lu && (
                     <button className="iconbtn" aria-label="Marquer comme lue" title="Marquer comme lue"
                       onClick={() => marquerLu(n.id)}><IcCheck /></button>
                   )}

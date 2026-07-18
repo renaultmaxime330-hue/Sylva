@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Sylva — Gestion de chantiers forestiers",
     short_name: "Sylva",
-    description: "Gestion de chantiers pour l'abattage forestier. Fonctionne hors-ligne.",
+    description: "Gestion de chantiers pour l'abattage forestier, en équipe et en temps réel.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

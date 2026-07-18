@@ -2,7 +2,7 @@ import type { Materiel } from "./db";
 import { apiFetch } from "./client/auth";
 import { queryClient } from "./client/queryClient";
 
-export type MaterielInput = Omit<Materiel, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type MaterielInput = Omit<Materiel, "id" | "createdAt" | "updatedAt">;
 
 export function champsVidesMateriel(): MaterielInput {
   return { categorie: "chaine", nom: "", quantite: 0, unite: "u", seuilAlerte: undefined, notes: "" };

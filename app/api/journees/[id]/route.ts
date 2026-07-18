@@ -4,6 +4,7 @@ import { db } from "@/lib/server/db/client";
 import { journees } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { journeePatchSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -27,6 +28,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const [row] = await db.update(journees).set({ ...parsed.data, updatedAt: sql`now()` })
     .where(and(eq(journees.id, id), eq(journees.teamId, ctx.teamId))).returning();
   if (!row) return NextResponse.json({ erreur: "Journée introuvable." }, { status: 404 });
+  emettreEquipe(ctx.teamId, "journees", row.id, "update");
   return NextResponse.json({ journee: row });
 }
 
@@ -35,5 +37,6 @@ export async function DELETE(req: Request, { params }: Ctx) {
   if (estErreur(ctx)) return ctx;
   const { id } = await params;
   await db.delete(journees).where(and(eq(journees.id, id), eq(journees.teamId, ctx.teamId)));
+  emettreEquipe(ctx.teamId, "journees", id, "delete");
   return NextResponse.json({ ok: true });
 }

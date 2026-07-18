@@ -8,8 +8,18 @@ import { formatSurface } from "@/lib/format";
 import { IcSite, IcPlus, IcChevron, IcRuler, IcCheck, IcClock, IcChart } from "@/lib/icons";
 
 export default function Dashboard() {
-  const { data: chantiers } = useChantiers();
+  const { data: chantiers, isError, error } = useChantiers();
 
+  if (isError) {
+    return (
+      <div className="card pad empty">
+        <div className="ic"><IcSite /></div>
+        <h3>Rejoins ou crée une équipe</h3>
+        <p>{error instanceof Error ? error.message : "Une équipe est nécessaire pour voir tes chantiers."}</p>
+        <Link href="/reglages" className="btn primary big">Aller aux réglages</Link>
+      </div>
+    );
+  }
   if (!chantiers) {
     return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
   }

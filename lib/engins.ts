@@ -2,7 +2,7 @@ import type { Engin, Entretien } from "./db";
 import { apiFetch } from "./client/auth";
 import { queryClient } from "./client/queryClient";
 
-export type EnginInput = Omit<Engin, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type EnginInput = Omit<Engin, "id" | "createdAt" | "updatedAt">;
 
 export function champsVidesEngin(): EnginInput {
   return {

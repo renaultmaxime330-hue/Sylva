@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/server/db/client";
 import { teams, teamMembers } from "@/lib/server/db/schema";
 import { utilisateurCourant } from "@/lib/server/auth/session";
+import { limiteMutationDepassee } from "@/lib/server/auth/rateLimit";
+import { tracer } from "@/lib/server/audit";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans I/O/0/1, ambigus à recopier à la main
 
@@ -18,6 +20,9 @@ const corps = z.object({ nom: z.string().trim().max(80).optional() });
 export async function POST(req: Request) {
   const u = await utilisateurCourant(req);
   if (!u) return NextResponse.json({ erreur: "Non connecté." }, { status: 401 });
+  if (limiteMutationDepassee(`mutation:${u.id}`)) {
+    return NextResponse.json({ erreur: "Trop de requêtes — patiente un instant." }, { status: 429 });
+  }
 
   const parsed = corps.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ erreur: "Requête invalide." }, { status: 400 });
@@ -39,6 +44,7 @@ export async function POST(req: Request) {
         });
         return t;
       });
+      tracer({ teamId: equipe.id, userId: u.id, action: "equipe.creation", entityType: "teams", entityId: equipe.id, req });
       return NextResponse.json({ equipe });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

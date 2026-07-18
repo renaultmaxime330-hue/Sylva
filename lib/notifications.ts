@@ -1,93 +1,63 @@
-import { db, newId, type Notif, type NotifType } from "./db";
-import { alerteEntretien } from "./engins";
-import { stockBas } from "./materiel";
+import type { NotifType } from "./db";
+import { apiFetch } from "./client/auth";
+import { queryClient } from "./client/queryClient";
 
-/* Centre d'alertes. Tout vit en local (IndexedDB) : ça marche hors-ligne.
-   Deux sources :
-   — les alertes DÉDUITES des données (entretien, stock, fin de chantier), rafraîchies
-     périodiquement et auto-résorbées quand la cause disparaît (entretien fait, stock refait) ;
-   — les événements REÇUS de l'équipe en temps réel (modif de la carte), voir lib/canal.ts.
-   La `cle` évite les doublons : une même cause = une seule alerte. */
+/* Centre d'alertes. Deux sources :
+   — les alertes DÉDUITES des données (entretien, stock, fin de chantier) —
+     moteur de recalcul reporté Phase 8 (voir rafraichirAlertes ci-dessous) ;
+   — les événements REÇUS de l'équipe en temps réel (modif de la carte), voir lib/canal.ts. */
 
+async function lireErreur(r: Response, defaut: string): Promise<never> {
+  const d = await r.json().catch(() => null);
+  throw new Error(d?.erreur ?? defaut);
+}
+
+function invalider() {
+  void queryClient.invalidateQueries({ queryKey: ["notifs"] });
+}
+
+/** La `cle` évite les doublons (dédoublonnage fait côté serveur, index unique). */
 export async function creerNotif(
   type: NotifType, cle: string, titre: string, detail: string, href?: string
 ): Promise<void> {
-  const existe = await db.notifs.where("cle").equals(cle).first();
-  if (existe) return;
-  await db.notifs.add({
-    id: newId(), type, cle, titre, detail, href,
-    lu: 0, createdAt: new Date().toISOString(),
+  const r = await apiFetch("/api/notifs", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, cle, titre, detail, href }),
   });
+  if (!r.ok) await lireErreur(r, "Impossible de créer l'alerte.");
+  invalider();
 }
 
-/** Retire les alertes dont la cause a disparu (préfixe de clé). */
-async function retirerParPrefixe(prefixe: string, garder: Set<string>): Promise<void> {
-  const toutes = await db.notifs.toArray();
-  const aSupprimer = toutes.filter((n) => n.cle.startsWith(prefixe) && !garder.has(n.cle)).map((n) => n.id);
-  if (aSupprimer.length) await db.notifs.bulkDelete(aSupprimer);
-}
-
-/** Recalcule les alertes déduites des données locales. Idempotent. */
+/** Recalcule les alertes déduites des données (entretien/stock/chantier terminé).
+    TODO Phase 8 : moteur serveur — ces données vivent maintenant en Postgres,
+    pas en IndexedDB, donc ce recalcul est neutralisé le temps de reporter la
+    logique côté serveur (voir plan de migration). */
 export async function rafraichirAlertes(): Promise<void> {
-  const vivantes = new Set<string>();
-
-  // 1) Entretien des engins
-  const engins = await db.engins.toArray();
-  for (const e of engins.filter((x) => x.actif)) {
-    const ents = await db.entretiens.where("enginId").equals(e.id).toArray();
-    const a = alerteEntretien(e, ents);
-    if (a.niveau !== "bientot" && a.niveau !== "depasse") continue;
-    const cle = `entretien:${e.id}:${a.niveau}`;
-    vivantes.add(cle);
-    await creerNotif(
-      "entretien", cle,
-      a.niveau === "depasse" ? `Entretien dépassé — ${e.nom}` : `Entretien bientôt — ${e.nom}`,
-      a.niveau === "depasse"
-        ? `${Math.abs(a.reste ?? 0)} h au-delà du seuil (${e.seuilEntretienH} h).`
-        : `Encore ${a.reste} h avant l'entretien des ${e.seuilEntretienH} h.`,
-      `/engins/${e.id}`
-    );
-  }
-  await retirerParPrefixe("entretien:", vivantes);
-
-  // 2) Stock bas
-  const mats = await db.materiel.toArray();
-  for (const m of mats.filter(stockBas)) {
-    const cle = `stock:${m.id}`;
-    vivantes.add(cle);
-    await creerNotif(
-      "stock", cle, `Stock bas — ${m.nom}`,
-      `Il reste ${m.quantite} ${m.unite} (seuil ${m.seuilAlerte}).`,
-      `/materiel`
-    );
-  }
-  await retirerParPrefixe("stock:", vivantes);
-
-  // 3) Chantiers terminés — on garde la trace même après (pas de retrait)
-  const termines = await db.chantiers.where("statut").equals("termine").toArray();
-  for (const c of termines) {
-    await creerNotif(
-      "chantier", `chantier:${c.id}:termine`, `Chantier terminé — ${c.nom}`,
-      "Pense à saisir les volumes par catégorie et à facturer.",
-      `/chantiers/${c.id}`
-    );
-  }
+  // no-op — TODO Phase 8
 }
 
 export async function marquerLu(id: string): Promise<void> {
-  await db.notifs.update(id, { lu: 1 });
+  const r = await apiFetch(`/api/notifs/${id}`, { method: "PATCH" });
+  if (!r.ok) await lireErreur(r, "Impossible de marquer l'alerte comme lue.");
+  invalider();
 }
 
 export async function marquerToutLu(): Promise<void> {
-  await db.notifs.where("lu").equals(0).modify({ lu: 1 });
+  const r = await apiFetch("/api/notifs", { method: "PATCH" });
+  if (!r.ok) await lireErreur(r, "Impossible de marquer les alertes comme lues.");
+  invalider();
 }
 
 export async function supprimerNotif(id: string): Promise<void> {
-  await db.notifs.delete(id);
+  const r = await apiFetch(`/api/notifs/${id}`, { method: "DELETE" });
+  if (!r.ok) await lireErreur(r, "Impossible de supprimer l'alerte.");
+  invalider();
 }
 
 export async function viderNotifs(): Promise<void> {
-  await db.notifs.clear();
+  const r = await apiFetch("/api/notifs", { method: "DELETE" });
+  if (!r.ok) await lireErreur(r, "Impossible d'effacer les alertes.");
+  invalider();
 }
 
 export function notifInfo(t: NotifType): { label: string; couleur: string } {
@@ -110,5 +80,3 @@ export function quand(iso: string): string {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) + " à " +
     d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
-
-export type { Notif };

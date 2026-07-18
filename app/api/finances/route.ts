@@ -4,6 +4,7 @@ import { db } from "@/lib/server/db/client";
 import { finances } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { financeSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 export async function GET(req: Request) {
   const ctx = await contexteEquipe(req);
@@ -20,5 +21,6 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ erreur: parsed.error.issues[0]?.message ?? "Requête invalide." }, { status: 400 });
 
   const [row] = await db.insert(finances).values({ ...parsed.data, teamId: ctx.teamId, createdBy: ctx.u.id }).returning();
+  emettreEquipe(ctx.teamId, "finances", row.id, "create");
   return NextResponse.json({ finance: row });
 }

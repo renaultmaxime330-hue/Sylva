@@ -4,6 +4,8 @@ import { db } from "@/lib/server/db/client";
 import { entretiens, engins } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { entretienSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
+import { recalculerAlertes } from "@/lib/server/recalculerAlertes";
 
 export async function GET(req: Request) {
   const ctx = await contexteEquipe(req);
@@ -41,5 +43,8 @@ export async function POST(req: Request) {
     }
     return r;
   });
+  emettreEquipe(ctx.teamId, "entretiens", row.id, "create");
+  if (data.heuresCompteur != null) emettreEquipe(ctx.teamId, "engins", data.enginId, "update");
+  void recalculerAlertes(ctx.teamId);
   return NextResponse.json({ entretien: row });
 }

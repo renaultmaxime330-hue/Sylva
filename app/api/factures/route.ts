@@ -4,6 +4,7 @@ import { db } from "@/lib/server/db/client";
 import { factures, factureSequences } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { factureSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 const NUMERO_AUTO = /^[A-Za-z]+-(\d{4})-(\d+)$/;
 
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
   try {
     const [row] = await db.insert(factures).values({ ...parsed.data, teamId: ctx.teamId, createdBy: ctx.u.id }).returning();
     await avancerCompteur(ctx.teamId, parsed.data.type, parsed.data.numero);
+    emettreEquipe(ctx.teamId, "factures", row.id, "create");
     return NextResponse.json({ facture: row });
   } catch (err) {
     if (err && typeof err === "object" && "code" in err && err.code === "23505") {

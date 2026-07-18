@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { useJournees } from "@/lib/queries/journees";
+import { useFinances } from "@/lib/queries/finances";
+import { useChantiers } from "@/lib/queries/chantiers";
 import { agreger, filtrePeriode, dansPeriode, type Periode } from "@/lib/production";
 import { bilan } from "@/lib/finances";
 import { formatHeures, formatM3 } from "@/lib/format";
@@ -21,9 +22,9 @@ export default function RapportsPage() {
   const [periode, setPeriode] = useState<Periode>("mois");
   const [chantierId, setChantierId] = useState<string>("tous");
 
-  const journees = useLiveQuery(() => db.journees.toArray(), []);
-  const finances = useLiveQuery(() => db.finances.toArray(), []);
-  const chantiers = useLiveQuery(() => db.chantiers.toArray(), []);
+  const { data: journees } = useJournees();
+  const { data: finances } = useFinances();
+  const { data: chantiers } = useChantiers();
 
   if (!journees || !finances || !chantiers) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 

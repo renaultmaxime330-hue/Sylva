@@ -3,7 +3,7 @@ import { DOC_STATUTS } from "./db";
 import { apiFetch } from "./client/auth";
 import { queryClient } from "./client/queryClient";
 
-export type FactureInput = Omit<DocCommercial, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type FactureInput = Omit<DocCommercial, "id" | "createdAt" | "updatedAt">;
 
 export function statutDocInfo(s: DocStatut) {
   return DOC_STATUTS.find((x) => x.value === s) ?? DOC_STATUTS[0];

@@ -7,7 +7,7 @@ import { queryClient } from "./client/queryClient";
    IndexedDB. Les signatures sont conservées à l'identique pour que les
    composants appelants n'aient pas à changer. */
 
-export type ChantierInput = Omit<Chantier, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type ChantierInput = Omit<Chantier, "id" | "createdAt" | "updatedAt">;
 
 async function lireErreur(r: Response, defaut: string): Promise<never> {
   const d = await r.json().catch(() => null);

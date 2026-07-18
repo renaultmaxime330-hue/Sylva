@@ -4,12 +4,17 @@ import { z } from "zod";
 import { db } from "@/lib/server/db/client";
 import { teams, teamMembers } from "@/lib/server/db/schema";
 import { utilisateurCourant } from "@/lib/server/auth/session";
+import { limiteMutationDepassee } from "@/lib/server/auth/rateLimit";
+import { tracer } from "@/lib/server/audit";
 
 const corps = z.object({ code: z.string().trim().toUpperCase().length(6, "Code invalide.") });
 
 export async function POST(req: Request) {
   const u = await utilisateurCourant(req);
   if (!u) return NextResponse.json({ erreur: "Non connecté." }, { status: 401 });
+  if (limiteMutationDepassee(`mutation:${u.id}`)) {
+    return NextResponse.json({ erreur: "Trop de requêtes — patiente un instant." }, { status: 429 });
+  }
 
   const parsed = corps.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ erreur: parsed.error.issues[0]?.message ?? "Code invalide." }, { status: 400 });
@@ -31,5 +36,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ erreur: "Impossible de rejoindre l'équipe." }, { status: 500 });
   }
 
+  tracer({ teamId: t.id, userId: u.id, action: "equipe.adhesion", entityType: "teams", entityId: t.id, req });
   return NextResponse.json({ ok: true, teamId: t.id });
 }

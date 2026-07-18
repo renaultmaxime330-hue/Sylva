@@ -4,6 +4,8 @@ import { db } from "@/lib/server/db/client";
 import { clients } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { clientPatchSchema } from "@/lib/server/validation";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
+import { tracer } from "@/lib/server/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -27,6 +29,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const [row] = await db.update(clients).set({ ...parsed.data, updatedAt: sql`now()` })
     .where(and(eq(clients.id, id), eq(clients.teamId, ctx.teamId))).returning();
   if (!row) return NextResponse.json({ erreur: "Client introuvable." }, { status: 404 });
+  emettreEquipe(ctx.teamId, "clients", row.id, "update");
   return NextResponse.json({ client: row });
 }
 
@@ -35,5 +38,7 @@ export async function DELETE(req: Request, { params }: Ctx) {
   if (estErreur(ctx)) return ctx;
   const { id } = await params;
   await db.delete(clients).where(and(eq(clients.id, id), eq(clients.teamId, ctx.teamId)));
+  emettreEquipe(ctx.teamId, "clients", id, "delete");
+  tracer({ teamId: ctx.teamId, userId: ctx.u.id, action: "suppression", entityType: "clients", entityId: id, req });
   return NextResponse.json({ ok: true });
 }

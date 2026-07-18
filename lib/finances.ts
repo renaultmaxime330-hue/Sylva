@@ -2,7 +2,7 @@ import type { Finance } from "./db";
 import { apiFetch } from "./client/auth";
 import { queryClient } from "./client/queryClient";
 
-export type FinanceInput = Omit<Finance, "id" | "createdAt" | "updatedAt" | "syncStatus">;
+export type FinanceInput = Omit<Finance, "id" | "createdAt" | "updatedAt">;
 
 export const CAT_RECETTES = ["Vente de bois", "Acompte", "Subvention", "Autre recette"];
 export const CAT_DEPENSES = ["Carburant", "Entretien machine", "Main-d'œuvre", "Location", "Pièces", "Assurance", "Autre dépense"];

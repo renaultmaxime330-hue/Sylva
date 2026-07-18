@@ -8,6 +8,7 @@ import {
   emettreJetons, optionsCookieRafraichissement, nettoyerAncienneVarianteCookie, COOKIE_RAFRAICHISSEMENT,
 } from "@/lib/server/auth/emettre";
 import { limiteAtteinte, enregistrerTentative, reinitialiserTentatives } from "@/lib/server/auth/rateLimit";
+import { tracer } from "@/lib/server/audit";
 
 const corps = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
   if (!u) {
     await verifierMotDePasse(password, HASH_FACTICE); // temps constant
     enregistrerTentative(cleIp);
+    tracer({ action: "auth.login_echec", meta: { email }, req });
     return NextResponse.json({ erreur: ERREUR_GENERIQUE }, { status: 401 });
   }
 
@@ -60,11 +62,13 @@ export async function POST(req: Request) {
       failedLoginCount: compte,
       lockedUntil: compte >= SEUIL_VERROUILLAGE ? new Date(Date.now() + DUREE_VERROUILLAGE_MS) : null,
     }).where(eq(users.id, u.id));
+    tracer({ userId: u.id, action: "auth.login_echec", meta: { email }, req });
     return NextResponse.json({ erreur: ERREUR_GENERIQUE }, { status: 401 });
   }
 
   reinitialiserTentatives(cleIp);
   await db.update(users).set({ failedLoginCount: 0, lockedUntil: null, lastLoginAt: sql`now()` }).where(eq(users.id, u.id));
+  tracer({ userId: u.id, action: "auth.login", req });
 
   const utilisateur = { id: u.id, email: u.email, nom: u.nom, role: u.role };
   const { accessToken, refreshToken, expiresAt } = await emettreJetons(utilisateur);

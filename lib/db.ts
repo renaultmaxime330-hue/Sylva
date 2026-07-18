@@ -1,10 +1,9 @@
-import Dexie, { type Table } from "dexie";
-
 /* ============================================================
-   Sylva — Base de données locale (IndexedDB)
-   Tout est stocké sur l'appareil : l'app fonctionne à 100 %
-   hors-ligne. La synchro cloud (Supabase) viendra en Phase 04
-   en s'appuyant sur les champs updatedAt / syncStatus.
+   Sylva — types du domaine métier, partagés entre le client et
+   ce qu'expose l'API serveur (Postgres/Railway). Ce fichier ne
+   contient plus de base de données locale : les données vivent
+   côté serveur, voir lib/server/db/schema.ts pour le schéma réel
+   et lib/queries/*.ts pour les hooks qui les récupèrent.
    ============================================================ */
 
 export type Statut = "a_faire" | "en_cours" | "termine";
@@ -51,33 +50,11 @@ export interface Chantier {
   volumes?: VolumeCategorie[]; // m³ par catégorie (renseigné une fois terminé)
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced"; // pour la future synchro cloud
 }
 
 /* Total des m³ produits sur un chantier. */
 export function totalVolume(c: Pick<Chantier, "volumes">): number {
   return (c.volumes ?? []).reduce((s, v) => s + (Number(v.m3) || 0), 0);
-}
-
-export interface Photo {
-  id: string;
-  chantierId: string;
-  blob: Blob;
-  nom: string;
-  legende: string;
-  lat?: number;
-  lng?: number;
-  createdAt: string;
-}
-
-export interface DocFile {
-  id: string;
-  chantierId: string;
-  blob: Blob;
-  nom: string;
-  mime: string;
-  taille: number;
-  createdAt: string;
 }
 
 /* ---------- Géométries cartographiques ---------- */
@@ -119,10 +96,7 @@ export interface Geometrie {
   surfaceHa?: number; // pour les polygones
   longueurM?: number; // pour les lignes (pistes, chemins) — en mètres
   createdAt: string;
-  /** Dernière modification — arbitre les conflits lors du partage d'équipe.
-      Absent sur les tracés créés avant le partage → createdAt fait foi. */
   updatedAt?: string;
-  syncStatus: "local" | "synced";
 }
 
 /* ---------- Journée de travail (production + temps) ---------- */
@@ -143,7 +117,6 @@ export interface Journee {
   notes: string;
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced";
 }
 
 /* ---------- Engins (machines) & entretiens ---------- */
@@ -174,7 +147,6 @@ export interface Engin {
   notes: string;
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced";
 }
 
 export interface Entretien {
@@ -220,7 +192,6 @@ export interface Materiel {
   notes: string;
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced";
 }
 
 /* ---------- Comptabilité (recettes / dépenses) ---------- */
@@ -234,7 +205,6 @@ export interface Finance {
   date: string;
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced";
 }
 
 /* ---------- Clients / propriétaires ---------- */
@@ -248,7 +218,6 @@ export interface Client {
   notes: string;
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced";
 }
 
 /* ---------- Devis & Factures ---------- */
@@ -286,101 +255,10 @@ export interface DocCommercial {
   statut: DocStatut;
   createdAt: string;
   updatedAt: string;
-  syncStatus: "local" | "synced";
 }
 
 /* ---------- Alertes & notifications ---------- */
-
 export type NotifType = "entretien" | "stock" | "chantier" | "carte";
-
-export interface Notif {
-  id: string;
-  type: NotifType;
-  titre: string;
-  detail: string;
-  href?: string;      // où aller au clic
-  /** Clé stable : évite de recréer 10 fois la même alerte. */
-  cle: string;
-  lu: 0 | 1;          // indexable (Dexie n'indexe pas les booléens)
-  createdAt: string;
-}
-
-/* ---------- Partage d'équipe ---------- */
-
-export type KindPartage = "chantier" | "geometrie";
-
-/** Trace d'une suppression, pour qu'elle se propage à l'équipe (sinon l'élément
-    reviendrait au prochain « tirer »). Effacée une fois poussée. */
-export interface Tombe {
-  cle: string;   // `${kind}:${id}`
-  kind: KindPartage;
-  id: string;
-  at: string;
-}
-
-class SylvaDB extends Dexie {
-  chantiers!: Table<Chantier, string>;
-  photos!: Table<Photo, string>;
-  documents!: Table<DocFile, string>;
-  geometries!: Table<Geometrie, string>;
-  journees!: Table<Journee, string>;
-  engins!: Table<Engin, string>;
-  entretiens!: Table<Entretien, string>;
-  materiel!: Table<Materiel, string>;
-  finances!: Table<Finance, string>;
-  clients!: Table<Client, string>;
-  factures!: Table<DocCommercial, string>;
-  notifs!: Table<Notif, string>;
-  tombes!: Table<Tombe, string>;
-
-  constructor() {
-    super("sylva");
-    this.version(1).stores({
-      chantiers: "id, statut, commune, proprietaire, updatedAt",
-      photos: "id, chantierId, createdAt",
-      documents: "id, chantierId, createdAt",
-    });
-    // v2 : ajout des géométries cartographiques (parcelles, points, pistes…)
-    this.version(2).stores({
-      geometries: "id, chantierId, type, createdAt",
-    });
-    // v3 : journées de travail (production + temps)
-    this.version(3).stores({
-      journees: "id, chantierId, date, updatedAt",
-    });
-    // v4 : engins (machines) & entretiens
-    this.version(4).stores({
-      engins: "id, type, actif, updatedAt",
-      entretiens: "id, enginId, date, createdAt",
-    });
-    // v5 : matériel (inventaire) & comptabilité
-    this.version(5).stores({
-      materiel: "id, categorie, updatedAt",
-      finances: "id, chantierId, type, date, updatedAt",
-    });
-    // v6 : clients / propriétaires
-    this.version(6).stores({
-      clients: "id, nom, updatedAt",
-    });
-    // v7 : devis & factures
-    this.version(7).stores({
-      factures: "id, type, numero, clientId, date, updatedAt",
-    });
-    // v8 : centre d'alertes (entretien, stock, fin de chantier, modifs carte de l'équipe)
-    this.version(8).stores({
-      notifs: "id, type, cle, lu, createdAt",
-    });
-    // v9 : suppressions en attente de propagation à l'équipe
-    this.version(9).stores({
-      tombes: "cle, kind, at",
-    });
-  }
-}
-
-/* Instancié au niveau module : les composants qui l'utilisent sont
-   des composants client, et Dexie n'ouvre la base qu'au premier accès
-   (côté navigateur uniquement). */
-export const db = new SylvaDB();
 
 export function newId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();

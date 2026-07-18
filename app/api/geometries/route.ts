@@ -5,6 +5,7 @@ import { geometries, chantiers } from "@/lib/server/db/schema";
 import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
 import { geometrieSchema } from "@/lib/server/validation";
 import { surfaceHa, longueurM } from "@/lib/server/geo";
+import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 export async function GET(req: Request) {
   const ctx = await contexteEquipe(req);
@@ -35,5 +36,6 @@ export async function POST(req: Request) {
     surfaceHa: surfaceHa(parsed.data.geojson) ?? null,
     longueurM: longueurM(parsed.data.geojson) ?? null,
   }).returning();
+  emettreEquipe(ctx.teamId, "geometries", row.id, "create");
   return NextResponse.json({ geometrie: row });
 }
