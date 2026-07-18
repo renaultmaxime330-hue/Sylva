@@ -21,6 +21,9 @@
   --accent-soft: #E2ECDB;
   --wood: #A75F24;
   --wood-soft: #F0E4D4;
+  /* Acier — accent propre au module Matériel (robustesse/précision), distinct du vert/bois */
+  --steel: #46606B;
+  --steel-soft: #E4EAEC;
 
   /* Sémantique / statuts */
   --st-todo: #6B7280;
@@ -83,6 +86,8 @@
     --accent-soft: #1D2A1E;
     --wood: #D2914E;
     --wood-soft: #2A2016;
+    --steel: #8DA8B3;
+    --steel-soft: #1D272B;
     --st-todo: #98A0AC;
     --st-todo-bg: #23282E;
     --st-doing: #D2914E;
@@ -107,6 +112,7 @@
   --text: #182118; --text-muted: #566150;
   --accent: #2E6B41; --accent-strong: #1F4E2E; --accent-contrast: #ffffff;
   --accent-soft: #E2ECDB; --wood: #A75F24; --wood-soft: #F0E4D4;
+  --steel: #46606B; --steel-soft: #E4EAEC;
   --st-todo: #6B7280; --st-todo-bg: #E7E9EC; --st-doing: #A75F24; --st-doing-bg: #F4E6D6;
   --st-done: #2E6B41; --st-done-bg: #DDEBDD; --danger: #C0392B; --danger-bg: #F7E1DE;
   --sb-bg: #152A1C; --sb-bg-2: #1B3524; --sb-border: rgba(234, 242, 230, .12);
@@ -120,6 +126,7 @@
   --text: #E9EEE6; --text-muted: #9AA893;
   --accent: #63A473; --accent-strong: #86C593; --accent-contrast: #0D140D;
   --accent-soft: #1D2A1E; --wood: #D2914E; --wood-soft: #2A2016;
+  --steel: #8DA8B3; --steel-soft: #1D272B;
   --st-todo: #98A0AC; --st-todo-bg: #23282E; --st-doing: #D2914E; --st-doing-bg: #2A2016;
   --st-done: #63A473; --st-done-bg: #1D2A1E; --danger: #E8776B; --danger-bg: #2A1815;
   --sb-bg: #0C130D; --sb-bg-2: #121F15; --sb-border: rgba(234, 242, 230, .09);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MATERIEL_CATEGORIES, materielCatLabel, type Materiel } from "@/lib/db";
 import { ajusterQuantite, supprimerMateriel, stockBas } from "@/lib/materiel";
 import { useMateriel } from "@/lib/queries/materiel";
-import { IcBox, IcPlus, IcMinus, IcEdit, IcTrash, IcWarning } from "@/lib/icons";
+import { IcBox, IcPlus, IcMinus, IcEdit, IcTrash } from "@/lib/icons";
 
 export default function MaterielPage() {
   const { data: materiel } = useMateriel();
@@ -42,10 +42,12 @@ export default function MaterielPage() {
       ) : (
         groupes.map((g) => (
           <section key={g.cat}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-.01em", marginBottom: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>{g.label}</h2>
-            <div className="list">
-              {g.items.map((m) => <MaterielRow key={m.id} m={m} />)}
+            <div className="mat-cat-head">
+              <span className="tick" />
+              <h2>{g.label}</h2>
+              <span className="n">{g.items.length} article{g.items.length > 1 ? "s" : ""}</span>
             </div>
+            {g.items.map((m) => <MaterielRow key={m.id} m={m} />)}
           </section>
         ))
       )}
@@ -56,17 +58,17 @@ export default function MaterielPage() {
 function MaterielRow({ m }: { m: Materiel }) {
   const bas = stockBas(m);
   return (
-    <div className="mat-row">
-      <div className="mbody">
-        <div className="t">{m.nom} {bas && <span className="pill sm" style={{ color: "var(--danger)", background: "var(--danger-bg)" }}><IcWarning /> Stock bas</span>}</div>
-        <div className="m muted">{materielCatLabel(m.categorie)}{m.seuilAlerte != null && ` · alerte à ${m.seuilAlerte} ${m.unite}`}</div>
+    <div className="mat2-row" data-bas={bas}>
+      <div className="mat2-body">
+        <div className="t">{m.nom} {bas && <span className="mat2-tag-bas">Stock bas</span>}</div>
+        <div className="m">{materielCatLabel(m.categorie)}{m.seuilAlerte != null && ` · alerte à ${m.seuilAlerte} ${m.unite}`}</div>
       </div>
-      <div className="qty">
-        <button className="qbtn" aria-label="Retirer" onClick={() => ajusterQuantite(m.id, -1)}><IcMinus /></button>
-        <span className="qval">{m.quantite.toLocaleString("fr-FR")} <small>{m.unite}</small></span>
-        <button className="qbtn" aria-label="Ajouter" onClick={() => ajusterQuantite(m.id, 1)}><IcPlus /></button>
+      <div className="mat2-readout">
+        <button aria-label="Retirer" onClick={() => ajusterQuantite(m.id, -1)}><IcMinus /></button>
+        <span className="qv">{m.quantite.toLocaleString("fr-FR")}<small>{m.unite || "u"}</small></span>
+        <button aria-label="Ajouter" onClick={() => ajusterQuantite(m.id, 1)}><IcPlus /></button>
       </div>
-      <div className="jactions">
+      <div className="mat2-actions">
         <Link href={`/materiel/${m.id}/modifier`} className="iconbtn" aria-label="Modifier"><IcEdit /></Link>
         <button className="iconbtn" aria-label="Supprimer" onClick={() => { if (confirm(`Supprimer « ${m.nom} » ?`)) supprimerMateriel(m.id); }}><IcTrash /></button>
       </div>
