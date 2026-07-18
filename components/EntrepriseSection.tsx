@@ -19,7 +19,7 @@ export default function EntrepriseSection() {
 
   return (
     <div className="card pad">
-      <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><IcReceipt /> Mon entreprise</h3>
+      <h3 className="sec-title" style={{ marginBottom: 6 }}><span className="sec-ic wood"><IcReceipt /></span> Mon entreprise</h3>
       <p className="muted" style={{ fontSize: 14, marginBottom: 16 }}>Ces coordonnées apparaissent en en-tête de tes devis et factures.</p>
       {msg && <div className="banner" style={{ marginBottom: 14 }}><IcCheck /> {msg}</div>}
       <form className="form" onSubmit={save}>

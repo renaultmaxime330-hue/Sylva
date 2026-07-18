@@ -149,6 +149,34 @@
 }
 .card.pad { padding: 24px; }
 
+/* ---------- En-tête de section (titre de carte + icône) ----------
+   Même famille visuelle que .empty .ic / .nglyph / .doc-row .fi : icône
+   dans un badge doux teinté d'accent, jamais une icône nue à taille libre. */
+.sec-title {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font-display); font-optical-sizing: auto;
+  font-size: 19px; font-weight: 600; letter-spacing: -.005em;
+  margin-bottom: 16px;
+}
+.sec-ic {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 40px; height: 40px; border-radius: var(--r);
+  background: linear-gradient(160deg, var(--accent-soft), color-mix(in srgb, var(--accent-soft) 55%, var(--surface)));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+.sec-ic svg { width: 19px; height: 19px; }
+.sec-ic.danger {
+  background: linear-gradient(160deg, var(--danger-bg), color-mix(in srgb, var(--danger-bg) 55%, var(--surface)));
+  border-color: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+.sec-ic.wood {
+  background: linear-gradient(160deg, var(--wood-soft), color-mix(in srgb, var(--wood-soft) 55%, var(--surface)));
+  border-color: color-mix(in srgb, var(--wood) 22%, transparent);
+  color: var(--wood);
+}
+
 /* ---------- En-tête de page ---------- */
 .page-head {
   display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
@@ -851,6 +879,51 @@
   .list > :nth-child(8), .stats > :nth-child(8) { animation-delay: .275s; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 }
+
+/* ---------- Connexion : vitrine forestière (page /connexion uniquement) ---------- */
+.auth-shell { min-height: 100dvh; display: grid; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .auth-shell { grid-template-columns: 1.15fr 1fr; } }
+
+.auth-hero {
+  display: none; position: relative; overflow: hidden; flex-direction: column;
+  padding: 48px 56px 0;
+  color: var(--sb-text);
+  background:
+    radial-gradient(760px 520px at 12% 6%, rgba(159, 211, 166, .16), transparent 60%),
+    repeating-radial-gradient(circle at 108% 108%, transparent 0 60px, rgba(234, 242, 230, .05) 60px calc(60px + 1.5px)),
+    linear-gradient(165deg, var(--sb-bg-2), var(--sb-bg) 62%);
+}
+@media (min-width: 900px) { .auth-hero { display: flex; } }
+.auth-hero .brand-mark { display: flex; align-items: center; gap: 12px; flex: none; }
+.auth-hero .brand-mark svg { width: 32px; height: 32px; color: #9FD3A6; }
+.auth-hero .brand-mark span {
+  font-family: var(--font-display); font-optical-sizing: auto;
+  font-size: 22px; font-weight: 600; color: #F4F9F2;
+}
+.auth-hero .pitch { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 460px; padding-bottom: 100px; }
+.auth-hero .pitch h2 {
+  font-family: var(--font-display); font-optical-sizing: auto;
+  font-size: clamp(32px, 3.4vw, 44px); font-weight: 600; letter-spacing: -.01em; line-height: 1.14;
+  color: #F4F9F2;
+}
+.auth-hero .pitch p { color: var(--sb-muted); font-size: 16px; margin-top: 16px; max-width: 42ch; }
+.auth-hero .feats { display: grid; gap: 14px; margin-top: 32px; }
+.auth-hero .feat { display: flex; align-items: center; gap: 12px; }
+.auth-hero .feat .fi {
+  width: 38px; height: 38px; border-radius: var(--r); flex: none;
+  background: rgba(234, 242, 230, .08); border: 1px solid rgba(234, 242, 230, .14);
+  display: flex; align-items: center; justify-content: center; color: #9FD3A6;
+}
+.auth-hero .feat .fi svg { width: 18px; height: 18px; }
+.auth-hero .feat span { font-size: 14.5px; font-weight: 600; }
+.auth-hero .ridge {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 92px;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='360'%20height='64'%20viewBox='0%200%20360%2064'%3E%3Cpath%20d='M0%2064L14%2030L28%2064ZM36%2064L52%2014L68%2064ZM78%2064L90%2040L102%2064ZM112%2064L130%2022L148%2064ZM158%2064L170%2042L182%2064ZM192%2064L210%2010L228%2064ZM238%2064L252%2034L266%2064ZM276%2064L294%2020L312%2064ZM322%2064L336%2038L350%2064Z'%20fill='%239FD3A6'%20fill-opacity='.16'/%3E%3C/svg%3E");
+  background-repeat: repeat-x; background-position: bottom; background-size: 240px 64px;
+}
+
+.auth-panel { display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.auth-card { width: 100%; max-width: 420px; }
 
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {

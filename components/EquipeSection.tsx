@@ -51,7 +51,7 @@ export default function EquipeSection() {
 
   return (
     <div className="card pad">
-      <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><IcUsers /> Mon équipe (abatteur / débardeur)</h3>
+      <h3 className="sec-title" style={{ marginBottom: 6 }}><span className="sec-ic"><IcUsers /></span> Mon équipe (abatteur / débardeur)</h3>
       <p className="muted" style={{ fontSize: 14, marginBottom: 16 }}>
         Relie ton compte à celui de ton débardeur pour travailler ensemble sur les mêmes chantiers.
       </p>

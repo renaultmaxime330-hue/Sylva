@@ -131,6 +131,13 @@
 
 * { box-sizing: border-box; padding: 0; margin: 0; }
 
+/* Filet de sécurité : toute icône SVG sans classe de taille dédiée (ex. un
+   <IcXxx/> posé directement dans un titre) hérite d'une taille raisonnable
+   au lieu du comportement par défaut du navigateur (qui peut occuper des
+   centaines de pixels sans width/height explicites). Spécificité volontairement
+   basse : toute règle `.xxx svg { width: … }` plus bas la remplace normalement. */
+svg { width: 1.15em; height: 1.15em; flex: none; }
+
 html { height: 100%; color-scheme: light dark; }
 html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }

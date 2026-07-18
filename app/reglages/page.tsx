@@ -56,7 +56,7 @@ export default function ReglagesPage() {
 
       {/* Installation */}
       <div className="card pad">
-        <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><IcSettings /> Installer l&apos;application</h3>
+        <h3 className="sec-title"><span className="sec-ic"><IcSettings /></span> Installer l&apos;application</h3>
         {installed ? (
           <p className="muted" style={{ fontSize: 14.5 }}><IcCheck /> L&apos;application est installée sur cet appareil.</p>
         ) : installEvt ? (
@@ -80,7 +80,7 @@ export default function ReglagesPage() {
 
       {/* Session */}
       <div className="card pad">
-        <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><IcLogout /> Session</h3>
+        <h3 className="sec-title"><span className="sec-ic danger"><IcLogout /></span> Session</h3>
         <p className="muted" style={{ fontSize: 14.5, marginBottom: 14 }}>Se déconnecter de Sylva sur cet appareil.</p>
         <button className="btn danger" onClick={onDeconnecter} disabled={deconnexionEnCours}>
           <IcLogout /> {deconnexionEnCours ? "Déconnexion…" : "Se déconnecter"}
