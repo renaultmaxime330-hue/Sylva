@@ -997,6 +997,37 @@
   .dash-row .meta { display: none; }
 }
 
+/* ---------- Chantiers — index de terrain ----------
+   Personnalité "terrain" : la parcelle et la surface priment sur une
+   icône générique — le repère devient le numéro de parcelle lui-même,
+   comme sur une fiche de martelage, et la surface est mise en avant
+   plutôt que reléguée dans une ligne de méta-données. */
+.terrain-list {
+  display: grid; gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.terrain-row { display: flex; align-items: center; gap: 18px; padding: 15px 20px; background: var(--surface); transition: background var(--dur) var(--ease); }
+.terrain-row:hover { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.terrain-tag {
+  flex: none; min-width: 56px; height: 42px; padding: 0 8px; border-radius: var(--r-sm);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 32%, var(--border)); background: var(--accent-soft); color: var(--accent-strong);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; letter-spacing: .01em; line-height: 1.15;
+}
+.terrain-body { flex: 1; min-width: 0; }
+.terrain-body .t { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 600; font-size: 17px; }
+.terrain-body .m { color: var(--text-muted); font-size: 13.5px; margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
+.terrain-surf { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.terrain-surf .n { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+.terrain-surf .u { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-left: 2px; }
+.terrain-chev { flex: none; color: var(--text-muted); display: inline-flex; transition: transform var(--dur) var(--ease), color var(--dur) var(--ease); }
+.terrain-chev svg { width: 18px; height: 18px; }
+.terrain-row:hover .terrain-chev { transform: translateX(3px); color: var(--accent); }
+@media (max-width: 640px) {
+  .terrain-body .m { display: none; }
+  .terrain-surf .u { display: block; margin-left: 0; }
+}
+
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {
   .sidebar { display: none; }

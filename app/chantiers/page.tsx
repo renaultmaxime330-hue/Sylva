@@ -5,7 +5,6 @@ import { useState } from "react";
 import { STATUTS, type Statut } from "@/lib/db";
 import { useChantiers } from "@/lib/queries/chantiers";
 import StatutPill from "@/components/StatutPill";
-import { formatSurface } from "@/lib/format";
 import { IcSite, IcPlus, IcChevron, IcSearch } from "@/lib/icons";
 
 export default function ChantiersPage() {
@@ -24,14 +23,18 @@ export default function ChantiersPage() {
     return [c.nom, c.proprietaire, c.commune, c.numParcelle, c.essence, c.client]
       .join(" ").toLowerCase().includes(ql);
   });
+  const surfaceTotale = chantiers.reduce((s, c) => s + (c.surfaceHa ?? 0), 0);
 
   return (
     <div className="stack-gap">
       <div className="page-head">
         <div className="titles">
-          <p className="eyebrow">Chantiers</p>
-          <h1>Mes chantiers</h1>
-          <p className="sub">{chantiers.length} chantier{chantiers.length > 1 ? "s" : ""} au total.</p>
+          <p className="eyebrow">Index de terrain</p>
+          <h1>Chantiers</h1>
+          <p className="sub">
+            {chantiers.length} chantier{chantiers.length > 1 ? "s" : ""}
+            {surfaceTotale > 0 && ` · ${surfaceTotale.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} ha suivis`}
+          </p>
         </div>
         <div className="actions">
           <Link href="/chantiers/nouveau" className="btn primary big"><IcPlus /> Nouveau chantier</Link>
@@ -67,21 +70,23 @@ export default function ChantiersPage() {
           )}
         </div>
       ) : (
-        <div className="list">
+        <div className="terrain-list">
           {filtres.map((c) => (
-            <Link key={c.id} href={`/chantiers/${c.id}`} className="row-card">
-              <div className="glyph"><IcSite /></div>
-              <div className="body">
+            <Link key={c.id} href={`/chantiers/${c.id}`} className="terrain-row">
+              <span className="terrain-tag">{c.numParcelle || "—"}</span>
+              <div className="terrain-body">
                 <div className="t">{c.nom}</div>
                 <div className="m">
                   {c.proprietaire && <span>{c.proprietaire}</span>}
                   {c.commune && <>·<span>{c.commune}</span></>}
-                  {c.numParcelle && <>·<span>Parc. {c.numParcelle}</span></>}
-                  {c.surfaceHa != null && <>·<span>{formatSurface(c.surfaceHa)}</span></>}
+                  {c.essence && <>·<span>{c.essence}</span></>}
                 </div>
               </div>
+              {c.surfaceHa != null && (
+                <span className="terrain-surf"><span className="n">{c.surfaceHa.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}</span><span className="u">ha</span></span>
+              )}
               <StatutPill statut={c.statut} sm />
-              <span className="chev"><IcChevron /></span>
+              <span className="terrain-chev"><IcChevron /></span>
             </Link>
           ))}
         </div>
