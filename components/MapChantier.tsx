@@ -80,8 +80,8 @@ function roleGlyph(r: Role): string {
     // abatteuse : bras articulé levé vers la tête d'abattage
     : '<rect x="1.5" y="14" width="10" height="4.5" rx="1" fill="#fff" stroke="none"/>'
       + '<circle cx="4.5" cy="20" r="1.7" fill="#fff" stroke="none"/><circle cx="9.5" cy="20" r="1.7" fill="#fff" stroke="none"/>'
-      + '<path d="M9.5 13.5 L17.5 6"/>'
-      + '<circle cx="18.5" cy="5" r="2.1" fill="#fff" stroke="none"/>';
+      + '<path d="M9.5 13.5 L13.5 8 L18 6"/>'
+      + '<circle cx="19" cy="5.5" r="2" fill="#fff" stroke="none"/>';
 }
 
 function makeLiveBadge(L: LApi, role: Role, couleur: string): Leaflet.DivIcon {
