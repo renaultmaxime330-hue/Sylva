@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { teamMembers } from "../db/schema";
 import { utilisateurCourant, type Utilisateur } from "./session";
@@ -40,4 +40,22 @@ export async function contexteEquipe(req: Request): Promise<ContexteEquipe | Nex
 
 export function estErreur(c: ContexteEquipe | NextResponse): c is NextResponse {
   return c instanceof NextResponse;
+}
+
+async function estChefEquipe(userId: string, teamId: string): Promise<boolean> {
+  const [mem] = await db.select({ chefEntreprise: teamMembers.chefEntreprise }).from(teamMembers)
+    .where(and(eq(teamMembers.userId, userId), eq(teamMembers.teamId, teamId))).limit(1);
+  return mem?.chefEntreprise ?? false;
+}
+
+/** Comme contexteEquipe, mais réservé au chef d'entreprise de l'équipe —
+    domaines sensibles (comptabilité, devis/factures) où le reste de
+    l'équipe n'a rien à faire, ni en lecture ni en écriture. */
+export async function contexteEquipeChef(req: Request): Promise<ContexteEquipe | NextResponse> {
+  const ctx = await contexteEquipe(req);
+  if (estErreur(ctx)) return ctx;
+  if (!(await estChefEquipe(ctx.u.id, ctx.teamId))) {
+    return NextResponse.json({ erreur: "Réservé au chef d'entreprise." }, { status: 403 });
+  }
+  return ctx;
 }

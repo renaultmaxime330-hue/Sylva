@@ -42,6 +42,16 @@ export async function supprimerClient(id: string): Promise<void> {
   invalider(id);
 }
 
+const PARTICULES = new Set(["de", "du", "des", "d", "la", "le", "les", "m", "mme", "mlle"]);
+/** Initiales d'affichage (avatar) — ignore les particules type "de"/"M." pour ne garder que les mots significatifs. */
+export function initiales(nom: string): string {
+  const mots = nom.trim().split(/\s+/).map((w) => w.replace(/[.,']/g, "")).filter(Boolean);
+  const signif = mots.filter((w) => !PARTICULES.has(w.toLowerCase()));
+  const base = signif.length > 0 ? signif : mots;
+  if (base.length >= 2) return (base[0][0] + base[1][0]).toUpperCase();
+  return (base[0] || "?").slice(0, 2).toUpperCase();
+}
+
 function norm(s: string): string {
   return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }

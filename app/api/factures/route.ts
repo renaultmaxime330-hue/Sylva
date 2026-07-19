@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/server/db/client";
 import { factures, factureSequences } from "@/lib/server/db/schema";
-import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
+import { contexteEquipeChef, estErreur } from "@/lib/server/auth/contexte";
 import { factureSchema } from "@/lib/server/validation";
 import { emettreEquipe } from "@/lib/server/realtime/emit";
 
@@ -25,14 +25,14 @@ async function avancerCompteur(teamId: string, type: "devis" | "facture", numero
 }
 
 export async function GET(req: Request) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
   const lignes = await db.select().from(factures).where(eq(factures.teamId, ctx.teamId)).orderBy(desc(factures.date));
   return NextResponse.json({ factures: lignes });
 }
 
 export async function POST(req: Request) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
 
   const parsed = factureSchema.safeParse(await req.json().catch(() => null));

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { supprimerClient, chantiersDeClient } from "@/lib/clients";
+import { supprimerClient, chantiersDeClient, initiales } from "@/lib/clients";
 import { useClient } from "@/lib/queries/clients";
 import { useChantiers } from "@/lib/queries/chantiers";
 import { useJournees } from "@/lib/queries/journees";
@@ -56,8 +56,13 @@ export default function FicheClient() {
       <div className="page-head">
         <div className="titles">
           <Link href="/clients" className="btn ghost" style={{ marginBottom: 10, paddingLeft: 8 }}><IcBack /> Clients</Link>
-          <h1>{client.nom}</h1>
-          <p className="sub">{mesChantiers.length} chantier{mesChantiers.length > 1 ? "s" : ""}{client.commune ? ` · ${client.commune}` : ""}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div className="contact-avatar lg">{initiales(client.nom)}</div>
+            <div>
+              <h1>{client.nom}</h1>
+              <p className="sub">{mesChantiers.length} chantier{mesChantiers.length > 1 ? "s" : ""}{client.commune ? ` · ${client.commune}` : ""}</p>
+            </div>
+          </div>
         </div>
         <div className="actions">
           <Link href={`/clients/${id}/modifier`} className="btn big"><IcEdit /> Modifier</Link>
@@ -90,19 +95,19 @@ export default function FicheClient() {
         {mesChantiers.length === 0 ? (
           <p className="muted" style={{ fontSize: 14 }}>Aucun chantier rattaché. Les chantiers dont le propriétaire correspond à « {client.nom} » apparaîtront ici.</p>
         ) : (
-          <div className="list">
+          <div className="terrain-list">
             {mesChantiers.map((c) => (
-              <Link key={c.id} href={`/chantiers/${c.id}`} className="row-card">
-                <div className="glyph"><IcSite /></div>
-                <div className="body">
+              <Link key={c.id} href={`/chantiers/${c.id}`} className="terrain-row">
+                <span className="terrain-tag">{c.numParcelle || "—"}</span>
+                <div className="terrain-body">
                   <div className="t">{c.nom}</div>
-                  <div className="m">
-                    {c.commune && <span>{c.commune}</span>}
-                    {c.surfaceHa != null && <>·<span>{c.surfaceHa.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} ha</span></>}
-                  </div>
+                  <div className="m">{c.commune && <span>{c.commune}</span>}{c.essence && <><span>·</span><span>{c.essence}</span></>}</div>
                 </div>
+                {c.surfaceHa != null && (
+                  <span className="terrain-surf"><span className="n">{c.surfaceHa.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}</span><span className="u">ha</span></span>
+                )}
                 <StatutPill statut={c.statut} sm />
-                <span className="chev"><IcChevron /></span>
+                <span className="terrain-chev"><IcChevron /></span>
               </Link>
             ))}
           </div>

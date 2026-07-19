@@ -2,19 +2,19 @@ import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/server/db/client";
 import { finances } from "@/lib/server/db/schema";
-import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
+import { contexteEquipeChef, estErreur } from "@/lib/server/auth/contexte";
 import { financeSchema } from "@/lib/server/validation";
 import { emettreEquipe } from "@/lib/server/realtime/emit";
 
 export async function GET(req: Request) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
   const lignes = await db.select().from(finances).where(eq(finances.teamId, ctx.teamId)).orderBy(desc(finances.date));
   return NextResponse.json({ finances: lignes });
 }
 
 export async function POST(req: Request) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
 
   const parsed = financeSchema.safeParse(await req.json().catch(() => null));

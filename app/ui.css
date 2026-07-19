@@ -1061,6 +1061,18 @@
   .terrain-surf .u { display: block; margin-left: 0; }
 }
 
+/* Plaque terrain — bandeau en tête de fiche chantier, prolonge le langage
+   de l'index (tampon de parcelle) sur l'écran de détail. */
+.terrain-plaque {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 18px 22px; box-shadow: var(--shadow-sm);
+}
+.terrain-plaque .tp-item { display: flex; flex-direction: column; gap: 3px; }
+.terrain-plaque .tp-item .k { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); font-weight: 700; }
+.terrain-plaque .tp-item .v { font-size: 19px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.terrain-plaque .tp-sep { width: 1px; align-self: stretch; background: var(--border); }
+
 /* ---------- Engins — fiche technique ----------
    Personnalité "technique" : compteur d'heures façon afficheur mécanique
    (panneau sombre quel que soit le thème, comme un vrai compteur horaire
@@ -1107,6 +1119,44 @@
   .tech-marque { display: none; }
 }
 
+/* Fiche engin — même famille visuelle que l'index (compteur en afficheur
+   mécanique), agrandie pour l'en-tête de fiche. */
+.tech-plaque {
+  display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 18px 22px; box-shadow: var(--shadow-sm);
+}
+.tech-plaque .tech-meter { width: 108px; padding: 10px 8px; }
+.tech-plaque .tech-meter .hv { font-size: 21px; }
+.tech-plaque .tp-item { display: flex; flex-direction: column; gap: 3px; }
+.tech-plaque .tp-item .k { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); font-weight: 700; }
+.tech-plaque .tp-item .v { font-size: 17px; font-weight: 700; }
+.tech-plaque .tp-sep { width: 1px; align-self: stretch; background: var(--border); }
+
+/* Alerte d'entretien — bandeau plein, pas une carte bordée générique */
+.tech-alerte {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  border-radius: var(--r-lg); padding: 16px 22px; box-shadow: var(--shadow-sm);
+}
+.tech-alerte.depasse { background: var(--danger-bg); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); }
+.tech-alerte.bientot { background: var(--wood-soft); border: 1px solid color-mix(in srgb, var(--wood) 35%, transparent); }
+.tech-alerte .ic { flex: none; width: 30px; height: 30px; }
+.tech-alerte .tt { font-weight: 800; font-size: 15.5px; }
+.tech-alerte.depasse .tt { color: var(--danger); }
+.tech-alerte.bientot .tt { color: var(--wood); }
+.tech-alerte .dd { color: var(--text-muted); font-size: 13.5px; margin-top: 2px; }
+
+/* Journal d'entretien — registre continu, comme le journal du dashboard */
+.tech-histo { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.tech-histo-row { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.tech-histo-row:last-child { border-bottom: none; }
+.tech-histo-row .thd { flex: none; width: 78px; text-align: center; }
+.tech-histo-row .thd .d { font-size: 20px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.tech-histo-row .thd .mo { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 700; margin-top: 2px; }
+.tech-histo-row .thb { flex: 1; min-width: 0; }
+.tech-histo-row .thb .t { font-weight: 700; }
+.tech-histo-row .thb .m { color: var(--text-muted); font-size: 13px; margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+
 /* ---------- Factures — registre sobre et administratif ----------
    Personnalité volontairement en retrait des autres modules : un vrai
    tableau comptable (numéros en mono, montants alignés à droite,
@@ -1143,6 +1193,7 @@
   display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--accent-strong); font-weight: 700;
 }
 .contact-rel svg { width: 15px; height: 15px; }
+.contact-avatar.lg { width: 60px; height: 60px; font-size: 21px; flex: none; }
 
 /* ---------- Responsive : mobile ---------- */
 @media (max-width: 860px) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { apiFetch } from "./auth";
+import { queryClient } from "./queryClient";
 
 export type Role = "abatteur" | "debardeur";
 
@@ -34,6 +35,10 @@ async function lireErreur(r: Response, defaut: string): Promise<never> {
   throw new Error(d?.erreur ?? defaut);
 }
 
+function invalider() {
+  void queryClient.invalidateQueries({ queryKey: ["equipe"] });
+}
+
 export async function monEquipe(): Promise<MonEquipe | null> {
   const r = await apiFetch("/api/teams/me");
   if (!r.ok) return null;
@@ -46,6 +51,7 @@ export async function creerEquipe(nom: string): Promise<Equipe> {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nom }),
   });
   if (!r.ok) await lireErreur(r, "Impossible de créer l'équipe.");
+  invalider();
   return (await r.json()).equipe;
 }
 
@@ -54,8 +60,10 @@ export async function rejoindreEquipe(code: string): Promise<void> {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }),
   });
   if (!r.ok) await lireErreur(r, "Impossible de rejoindre l'équipe.");
+  invalider();
 }
 
 export async function quitterEquipe(): Promise<void> {
   await apiFetch("/api/teams/me", { method: "DELETE" });
+  invalider();
 }

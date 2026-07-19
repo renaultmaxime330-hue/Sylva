@@ -8,7 +8,7 @@ import {
   supprimerEngin, ajouterEntretien, supprimerEntretien, alerteEntretien, type EntretienInput,
 } from "@/lib/engins";
 import { useEngin, useEntretiens } from "@/lib/queries/engins";
-import { formatDate, today } from "@/lib/format";
+import { today } from "@/lib/format";
 import { IcBack, IcEdit, IcTrash, IcTruck, IcWarning, IcCheck, IcPlus } from "@/lib/icons";
 
 const TYPE_LABEL: Record<Entretien["type"], string> = {
@@ -43,11 +43,8 @@ export default function FicheEngin() {
   }
 
   const cells = [
-    { k: "Type", v: enginTypeLabel(engin.type) },
     { k: "Marque", v: engin.marque || "—" },
     { k: "Modèle", v: engin.modele || "—" },
-    { k: "Compteur", v: engin.heuresTotal != null ? `${engin.heuresTotal.toLocaleString("fr-FR")} h` : "—" },
-    { k: "Entretien tous les", v: engin.seuilEntretienH != null ? `${engin.seuilEntretienH} h` : "—" },
   ];
 
   return (
@@ -67,31 +64,31 @@ export default function FicheEngin() {
         </div>
       </div>
 
+      <div className="tech-plaque">
+        <div className="tech-meter">
+          <div className="hv">{engin.heuresTotal != null ? engin.heuresTotal.toLocaleString("fr-FR") : "—"}</div>
+          <div className="hu">heures</div>
+        </div>
+        <div className="tp-item"><span className="k">Entretien tous les</span><span className="v">{engin.seuilEntretienH != null ? `${engin.seuilEntretienH} h` : "—"}</span></div>
+        <div className="tp-sep" />
+        {cells.map((c) => (
+          <div className="tp-item" key={c.k}><span className="k">{c.k}</span><span className="v">{c.v}</span></div>
+        ))}
+      </div>
+
       {/* Alerte entretien */}
       {(alerte.niveau === "depasse" || alerte.niveau === "bientot") && (
-        <div className="card pad" style={{
-          borderColor: alerte.niveau === "depasse" ? "var(--danger)" : "var(--wood)",
-          background: alerte.niveau === "depasse" ? "var(--danger-bg)" : "var(--wood-soft)",
-          display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap",
-        }}>
-          <IcWarning style={{ width: 28, height: 28, color: alerte.niveau === "depasse" ? "var(--danger)" : "var(--wood)" }} />
+        <div className={`tech-alerte ${alerte.niveau}`}>
+          <IcWarning className="ic" />
           <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontWeight: 800, color: alerte.niveau === "depasse" ? "var(--danger)" : "var(--wood)" }}>
-              {alerte.niveau === "depasse" ? "Entretien dépassé" : "Entretien à prévoir bientôt"}
-            </div>
-            <div className="muted" style={{ fontSize: 14 }}>
+            <div className="tt">{alerte.niveau === "depasse" ? "Entretien dépassé" : "Entretien à prévoir bientôt"}</div>
+            <div className="dd">
               {alerte.heuresDepuis} h depuis le dernier entretien
               {alerte.reste != null && (alerte.reste <= 0 ? ` · dépassé de ${Math.abs(alerte.reste)} h` : ` · reste ${alerte.reste} h`)}.
             </div>
           </div>
         </div>
       )}
-
-      <div className="info-grid">
-        {cells.map((c) => (
-          <div className="info-cell" key={c.k}><span className="k">{c.k}</span><span className="v">{c.v}</span></div>
-        ))}
-      </div>
 
       {engin.notes && (
         <div className="card pad">
@@ -107,27 +104,32 @@ export default function FicheEngin() {
         {entretiens.length === 0 ? (
           <p className="muted" style={{ fontSize: 14, marginTop: 16 }}>Aucun entretien enregistré pour l&apos;instant.</p>
         ) : (
-          <div className="list" style={{ marginTop: 16 }}>
-            {entretiens.map((e) => (
-              <div className="jrow" key={e.id}>
-                <div className="jbody">
-                  <div className="t">{TYPE_LABEL[e.type]} <span className="muted" style={{ fontWeight: 500 }}>· {formatDate(e.date)}</span></div>
-                  <div className="m">
-                    {e.heuresCompteur != null && <span>{e.heuresCompteur.toLocaleString("fr-FR")} h</span>}
-                    {e.cout != null && <span>{e.cout.toLocaleString("fr-FR")} €</span>}
-                    {e.carburantL != null && <span>{e.carburantL} L carburant</span>}
-                    {e.huile && <span>huile</span>}
-                    {e.notes && <span>{e.notes}</span>}
+          <div className="tech-histo" style={{ marginTop: 16 }}>
+            {entretiens.map((e) => {
+              const d = new Date(e.date + "T00:00:00");
+              return (
+                <div className="tech-histo-row" key={e.id}>
+                  <div className="thd">
+                    <div className="d">{isNaN(d.getTime()) ? "—" : d.getDate()}</div>
+                    <div className="mo">{isNaN(d.getTime()) ? "" : d.toLocaleDateString("fr-FR", { month: "short" })}</div>
                   </div>
-                </div>
-                <div className="jactions">
+                  <div className="thb">
+                    <div className="t">{TYPE_LABEL[e.type]}</div>
+                    <div className="m">
+                      {e.heuresCompteur != null && <span>{e.heuresCompteur.toLocaleString("fr-FR")} h</span>}
+                      {e.cout != null && <span>{e.cout.toLocaleString("fr-FR")} €</span>}
+                      {e.carburantL != null && <span>{e.carburantL} L carburant</span>}
+                      {e.huile && <span>huile</span>}
+                      {e.notes && <span>{e.notes}</span>}
+                    </div>
+                  </div>
                   <button className="iconbtn" aria-label="Supprimer"
                     onClick={() => { if (confirm("Supprimer cet entretien ?")) supprimerEntretien(e.id, id); }}>
                     <IcTrash />
                   </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

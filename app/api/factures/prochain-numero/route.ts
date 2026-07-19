@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/server/db/client";
 import { factureSequences } from "@/lib/server/db/schema";
-import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
+import { contexteEquipeChef, estErreur } from "@/lib/server/auth/contexte";
 
 /** Aperçu seul (aucune écriture) : le compteur n'avance réellement qu'à la
     création du document, pour ne jamais sauter de numéro sur un brouillon
     abandonné. */
 export async function GET(req: Request) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
 
   const url = new URL(req.url);

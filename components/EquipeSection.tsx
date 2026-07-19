@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { monEquipe, creerEquipe, rejoindreEquipe, quitterEquipe, type MonEquipe } from "@/lib/client/teams";
+import { creerEquipe, rejoindreEquipe, quitterEquipe } from "@/lib/client/teams";
+import { useMonEquipe } from "@/lib/queries/equipe";
 import { roleLabel } from "@/lib/profil";
 import { IcUsers, IcCheck, IcSite, IcTruck } from "@/lib/icons";
 
 export default function EquipeSection() {
   const { utilisateur, pret } = useAuth();
-  const [eq, setEq] = useState<MonEquipe | null>(null);
-  const [chargement, setChargement] = useState(true);
+  const { data: eq, isLoading: chargement } = useMonEquipe();
   const [mode, setMode] = useState<"creer" | "rejoindre">("creer");
   const [nomEquipe, setNomEquipe] = useState("");
   const [code, setCode] = useState("");
@@ -17,35 +17,26 @@ export default function EquipeSection() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
-  async function recharger() {
-    setEq(utilisateur ? await monEquipe() : null);
-    setChargement(false);
-  }
-  useEffect(() => {
-    if (pret) void recharger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pret, utilisateur]);
-
   function flash(t: string) { setMsg(t); setErr(""); setTimeout(() => setMsg(""), 4000); }
 
   async function onCreer(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr("");
-    try { await creerEquipe(nomEquipe.trim()); await recharger(); flash("Équipe créée ✓"); }
+    try { await creerEquipe(nomEquipe.trim()); flash("Équipe créée ✓"); }
     catch (e2) { setErr(e2 instanceof Error ? e2.message : "Échec."); }
     finally { setBusy(false); }
   }
   async function onRejoindre(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr("");
-    try { await rejoindreEquipe(code.trim()); await recharger(); flash("Tu as rejoint l'équipe ✓"); }
+    try { await rejoindreEquipe(code.trim()); flash("Tu as rejoint l'équipe ✓"); }
     catch (e2) { setErr(e2 instanceof Error ? e2.message : "Échec."); }
     finally { setBusy(false); }
   }
   async function onQuitter() {
     if (!eq || !confirm("Quitter cette équipe ?")) return;
     setBusy(true);
-    try { await quitterEquipe(); await recharger(); flash("Équipe quittée."); }
+    try { await quitterEquipe(); flash("Équipe quittée."); }
     finally { setBusy(false); }
   }
 

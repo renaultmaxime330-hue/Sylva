@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNotifs } from "@/lib/queries/notifs";
+import { useMonEquipe } from "@/lib/queries/equipe";
 import {
   IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck,
   IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt,
 } from "@/lib/icons";
 
-type Item = { href: string; label: string; icon: (p: object) => ReactNode; soon?: boolean };
+type Item = { href: string; label: string; icon: (p: object) => ReactNode; soon?: boolean; chefRequis?: boolean };
 
 const NAV: Item[] = [
   { href: "/", label: "Tableau de bord", icon: IcDashboard },
@@ -19,8 +20,8 @@ const NAV: Item[] = [
   { href: "/temps", label: "Temps de travail", icon: IcClock },
   { href: "/engins", label: "Engins", icon: IcTruck },
   { href: "/materiel", label: "Matériel", icon: IcBox },
-  { href: "/compta", label: "Comptabilité", icon: IcEuro },
-  { href: "/factures", label: "Devis & Factures", icon: IcReceipt },
+  { href: "/compta", label: "Comptabilité", icon: IcEuro, chefRequis: true },
+  { href: "/factures", label: "Devis & Factures", icon: IcReceipt, chefRequis: true },
   { href: "/rapports", label: "Rapports", icon: IcReport },
   { href: "/clients", label: "Clients", icon: IcUsers },
 ];
@@ -87,6 +88,9 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
   const online = useOnline();
   const { data: notifs } = useNotifs();
   const nonLues = notifs?.filter((n) => !n.lu).length ?? 0;
+  const { data: equipe } = useMonEquipe();
+  const estChef = equipe?.monChefEntreprise ?? false;
+  const navVisible = NAV.filter((it) => !it.chefRequis || estChef);
 
   return (
     <div className="shell">
@@ -98,7 +102,7 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
         </div>
 
         <nav>
-          {NAV.map((it) => {
+          {navVisible.map((it) => {
             const Icon = it.icon;
             if (it.soon) {
               return (

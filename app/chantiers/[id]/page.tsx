@@ -63,6 +63,15 @@ export default function FicheChantier() {
         </div>
       </div>
 
+      <div className="terrain-plaque">
+        <span className="terrain-tag">{chantier.numParcelle || "—"}</span>
+        <div className="tp-item"><span className="k">Surface</span><span className="v">{formatSurface(chantier.surfaceHa)}</span></div>
+        <div className="tp-sep" />
+        <div className="tp-item"><span className="k">Essence</span><span className="v">{chantier.essence || "—"}</span></div>
+        <div className="tp-sep" />
+        <div className="tp-item"><span className="k">Peuplement</span><span className="v">{chantier.typePeuplement || "—"}</span></div>
+      </div>
+
       <div className="tabs">
         <button className={tab === "infos" ? "on" : ""} onClick={() => setTab("infos")}>Infos</button>
         <button className={tab === "carte" ? "on" : ""} onClick={() => setTab("carte")}>Carte</button>
@@ -81,12 +90,8 @@ function OngletInfos({ chantier: c }: { chantier: Chantier }) {
   const cells: { k: string; v: string; mono?: boolean }[] = [
     { k: "Propriétaire", v: c.proprietaire || "—" },
     { k: "Client", v: c.client || "—" },
-    { k: "Parcelle", v: c.numParcelle || "—" },
     { k: "Commune", v: c.commune || "—" },
     { k: "Coordonnées GPS", v: formatGPS(c.lat, c.lng), mono: true },
-    { k: "Surface", v: formatSurface(c.surfaceHa) },
-    { k: "Peuplement", v: c.typePeuplement || "—" },
-    { k: "Essence", v: c.essence || "—" },
     { k: "Date de début", v: formatDate(c.dateDebut) },
     { k: "Date de fin", v: formatDate(c.dateFin) },
   ];

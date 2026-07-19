@@ -133,3 +133,6 @@ export const IcLogout = (p: P) => (
 export const IcZap = (p: P) => (
   <svg {...base(p)}><polygon points="13 2 4 14 11 14 10 22 20 10 13 10 13 2" /></svg>
 );
+export const IcLock = (p: P) => (
+  <svg {...base(p)}><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+);

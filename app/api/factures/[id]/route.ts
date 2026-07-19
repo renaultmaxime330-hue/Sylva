@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/server/db/client";
 import { factures } from "@/lib/server/db/schema";
-import { contexteEquipe, estErreur } from "@/lib/server/auth/contexte";
+import { contexteEquipeChef, estErreur } from "@/lib/server/auth/contexte";
 import { facturePatchSchema } from "@/lib/server/validation";
 import { emettreEquipe } from "@/lib/server/realtime/emit";
 import { tracer } from "@/lib/server/audit";
@@ -10,7 +10,7 @@ import { tracer } from "@/lib/server/audit";
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(req: Request, { params }: Ctx) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
   const { id } = await params;
   const [row] = await db.select().from(factures).where(and(eq(factures.id, id), eq(factures.teamId, ctx.teamId))).limit(1);
@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
   const { id } = await params;
 
@@ -41,7 +41,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
-  const ctx = await contexteEquipe(req);
+  const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
   const { id } = await params;
   await db.delete(factures).where(and(eq(factures.id, id), eq(factures.teamId, ctx.teamId)));

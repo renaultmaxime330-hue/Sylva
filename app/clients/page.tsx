@@ -2,19 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { chantiersDeClient } from "@/lib/clients";
+import { chantiersDeClient, initiales } from "@/lib/clients";
 import { useClients } from "@/lib/queries/clients";
 import { useChantiers } from "@/lib/queries/chantiers";
 import { IcUsers, IcPlus, IcSearch, IcSite } from "@/lib/icons";
-
-const PARTICULES = new Set(["de", "du", "des", "d", "la", "le", "les", "m", "mme", "mlle"]);
-function initiales(nom: string): string {
-  const mots = nom.trim().split(/\s+/).map((w) => w.replace(/[.,']/g, "")).filter(Boolean);
-  const signif = mots.filter((w) => !PARTICULES.has(w.toLowerCase()));
-  const base = signif.length > 0 ? signif : mots;
-  if (base.length >= 2) return (base[0][0] + base[1][0]).toUpperCase();
-  return (base[0] || "?").slice(0, 2).toUpperCase();
-}
 
 export default function ClientsPage() {
   const [q, setQ] = useState("");
