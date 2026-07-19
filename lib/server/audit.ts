@@ -8,7 +8,7 @@ import { auditLog } from "./db/schema";
    appelante (fire-and-forget, erreurs avalées). */
 
 export type ActionAudit =
-  | "auth.register" | "auth.login" | "auth.login_echec" | "auth.logout" | "auth.vol_detecte"
+  | "auth.register" | "auth.login" | "auth.login_echec" | "auth.logout" | "auth.vol_detecte" | "auth.role_change"
   | "equipe.creation" | "equipe.adhesion" | "equipe.depart" | "equipe.chef_nomme" | "equipe.chef_retire"
   | "suppression";
 

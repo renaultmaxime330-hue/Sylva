@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
 import { creerEquipe, rejoindreEquipe, quitterEquipe, definirChefEquipe } from "@/lib/client/teams";
 import { useMonEquipe } from "@/lib/queries/equipe";
-import { roleLabel } from "@/lib/profil";
+import { roleLabel, type Role } from "@/lib/profil";
 import { IcUsers, IcCheck, IcSite, IcTruck } from "@/lib/icons";
 
 export default function EquipeSection() {
-  const { utilisateur, pret } = useAuth();
+  const { utilisateur, pret, changerRole } = useAuth();
   const { data: eq, isLoading: chargement } = useMonEquipe();
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<"creer" | "rejoindre">("creer");
   const [nomEquipe, setNomEquipe] = useState("");
   const [code, setCode] = useState("");
@@ -45,6 +47,16 @@ export default function EquipeSection() {
     catch (e2) { setErr(e2 instanceof Error ? e2.message : "Échec."); }
     finally { setBusy(false); }
   }
+  async function onChangerRole(role: Role) {
+    if (eq && role === eq.monRole) return;
+    setBusy(true); setErr("");
+    try {
+      await changerRole(role);
+      void queryClient.invalidateQueries({ queryKey: ["equipe"] });
+      flash(`Rôle changé — ${roleLabel(role)} ✓`);
+    } catch (e2) { setErr(e2 instanceof Error ? e2.message : "Échec."); }
+    finally { setBusy(false); }
+  }
 
   return (
     <div className="card pad">
@@ -65,7 +77,13 @@ export default function EquipeSection() {
           <div className="info-grid" style={{ marginBottom: 16 }}>
             <div className="info-cell"><span className="k">Équipe</span><span className="v">{eq.equipe.nom || "Mon équipe"}</span></div>
             <div className="info-cell"><span className="k">Code de partage</span><span className="v mono" style={{ letterSpacing: ".1em", fontSize: 20, color: "var(--accent-strong)" }}>{eq.equipe.code}</span></div>
-            <div className="info-cell"><span className="k">Mon rôle</span><span className="v">{roleLabel(eq.monRole)}{eq.monChefEntreprise ? " · Chef d'entreprise" : ""}</span></div>
+            <div className="info-cell">
+              <span className="k">Mon rôle{eq.monChefEntreprise ? " · Chef d'entreprise" : ""}</span>
+              <div className="seg-mini" style={{ marginTop: 4 }}>
+                <button type="button" data-on={eq.monRole === "abatteur"} disabled={busy} onClick={() => onChangerRole("abatteur")}>Abatteur</button>
+                <button type="button" data-on={eq.monRole === "debardeur"} disabled={busy} onClick={() => onChangerRole("debardeur")}>Débardeur</button>
+              </div>
+            </div>
           </div>
           {eq.suisProprietaire && (
             <p className="muted" style={{ fontSize: 13.5, marginBottom: 16 }}>

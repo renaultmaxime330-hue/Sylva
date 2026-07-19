@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNotifs } from "@/lib/queries/notifs";
 import { useMonEquipe } from "@/lib/queries/equipe";
+import TourPorteurOverlay from "@/components/TourPorteurOverlay";
 import {
   IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck,
   IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt,
@@ -179,6 +180,8 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
           <IcPlus /> Nouveau
         </Link>
       </nav>
+
+      <TourPorteurOverlay />
     </div>
   );
 }

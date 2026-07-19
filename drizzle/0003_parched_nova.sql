@@ -1,0 +1,1 @@
+ALTER TABLE "journees" ADD COLUMN "nb_tours_porteur" double precision;

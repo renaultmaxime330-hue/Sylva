@@ -141,6 +141,7 @@ export const journees = pgTable("journees", {
   pauseMin: integer("pause_min"),
   hMachine: doublePrecision("h_machine"),
   hDeplacement: doublePrecision("h_deplacement"),
+  nbToursPorteur: doublePrecision("nb_tours_porteur"),
   notes: text("notes").notNull().default(""),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

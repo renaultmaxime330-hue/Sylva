@@ -71,25 +71,13 @@ function makeBadge(L: LApi, type: GeomType, couleur: string): Leaflet.DivIcon {
 /* ---------- Coéquipiers en direct ---------- */
 const COULEUR_ROLE: Record<Role, string> = { abatteur: "#C0392B", debardeur: "#2E6B41" };
 
-function roleGlyph(r: Role): string {
-  return r === "debardeur"
-    // porteur : grumes empilées, en traits épais pour rester lisible en petit
-    ? '<path d="M4 8h16" stroke-width="3.4"/>'
-      + '<path d="M4 13h16" stroke-width="3.4"/>'
-      + '<path d="M4 18h16" stroke-width="3.4"/>'
-    // abatteuse : bras-grue épais terminé par une tête pleine
-    : '<path d="M6 19V9h9V4" stroke-width="3.4" fill="none"/>'
-      + '<circle cx="16" cy="4" r="2.6" fill="#fff" stroke="none"/>';
-}
-
-function makeLiveBadge(L: LApi, role: Role, couleur: string): Leaflet.DivIcon {
-  const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${roleGlyph(role)}</svg>`;
+function makeLiveBadge(L: LApi, couleur: string): Leaflet.DivIcon {
   return L.divIcon({
     className: "geo-badge-wrap",
-    html: `<span class="live-badge" style="background:${couleur}"><span class="live-ring" style="border-color:${couleur}"></span>${svg}</span>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    tooltipAnchor: [0, -17],
+    html: `<span class="live-badge" style="background:${couleur}"><span class="live-ring" style="border-color:${couleur}"></span></span>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    tooltipAnchor: [0, -13],
   });
 }
 
@@ -362,7 +350,7 @@ export default function MapChantier({
         }).addTo(group);
       }
       const label = p.userId === "moi" ? `${p.nom} (toi) — ${roleLabel(p.role)}` : `${p.nom} — ${roleLabel(p.role)}`;
-      L.marker([p.lat, p.lng], { icon: makeLiveBadge(L, p.role, couleur), zIndexOffset: 1000 })
+      L.marker([p.lat, p.lng], { icon: makeLiveBadge(L, couleur), zIndexOffset: 1000 })
         .addTo(group)
         .bindTooltip(`${label}<br><span class="ll-sub">${depuis(p.maj)}</span>`, {
           direction: "top", offset: [0, -6], className: "live-label",
@@ -505,7 +493,7 @@ export default function MapChantier({
       const role = monRole ?? "abatteur";
       map.setView([lat, lng], 15);
       posMarkerRef.current?.remove();
-      posMarkerRef.current = L.marker([lat, lng], { icon: makeLiveBadge(L, role, COULEUR_ROLE[role]), zIndexOffset: 1000 }).addTo(map);
+      posMarkerRef.current = L.marker([lat, lng], { icon: makeLiveBadge(L, COULEUR_ROLE[role]), zIndexOffset: 1000 }).addTo(map);
     } catch (e) {
       alert("Position indisponible : " + (e instanceof Error ? e.message : ""));
     }

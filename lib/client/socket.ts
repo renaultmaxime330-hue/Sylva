@@ -49,6 +49,16 @@ surChangementJeton((t) => {
   if (e.socket && !e.socket.connected) e.socket.connect();
 });
 
+/** Force une reconnexion avec le jeton courant — utilisé après un changement
+    de rôle : la connexion active garde le rôle du handshake d'origine tant
+    qu'elle n'est pas recyclée (surChangementJeton ne reconnecte que si déjà
+    déconnecté), donc les coéquipiers verraient l'ancien rôle jusqu'à la
+    prochaine coupure sinon. */
+export function reconnecter(): void {
+  const s = etat().socket;
+  if (s) { s.disconnect(); s.connect(); }
+}
+
 /** Émet un événement vers le serveur (relayé à l'équipe côté io.ts). */
 export function emettre(event: string, donnees: unknown): void {
   assurerConnexion().emit(event, donnees);

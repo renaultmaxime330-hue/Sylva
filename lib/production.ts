@@ -20,6 +20,7 @@ export function champsVidesJournee(chantierId = ""): JourneeInput {
     pauseMin: undefined,
     hMachine: undefined,
     hDeplacement: undefined,
+    nbToursPorteur: undefined,
     notes: "",
   };
 }

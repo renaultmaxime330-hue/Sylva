@@ -114,6 +114,7 @@ export interface Journee {
   pauseMin?: number;    // minutes de pause
   hMachine?: number;    // heures machine (tronçonneuse/abatteuse)
   hDeplacement?: number; // heures de déplacement
+  nbToursPorteur?: number; // tours de porteur (débardage), demi-tours possibles
   notes: string;
   createdAt: string;
   updatedAt: string;

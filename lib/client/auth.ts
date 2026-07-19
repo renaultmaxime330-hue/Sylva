@@ -84,6 +84,14 @@ export async function deconnecter(): Promise<void> {
   definirToken(null);
 }
 
+export async function changerRole(role: "abatteur" | "debardeur"): Promise<void> {
+  const r = await fetch("/api/auth/me", {
+    method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${jetonActuel()}` },
+    body: JSON.stringify({ role }), credentials: "include",
+  });
+  if (!r.ok) await lireErreur(r, "Impossible de changer de rôle.");
+}
+
 /* Le rafraîchissement fait une ROTATION à usage unique côté serveur (voir
    /api/auth/refresh) : présenter deux fois le même cookie déclenche la
    détection de vol et coupe toute la session. Or plusieurs appels concurrents

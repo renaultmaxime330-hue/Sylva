@@ -4,8 +4,10 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import {
   rafraichirSilencieux, surChangementJeton,
   connecter as connecterApi, inscrire as inscrireApi, deconnecter as deconnecterApi,
+  changerRole as changerRoleApi,
   type UtilisateurClient,
 } from "@/lib/client/auth";
+import { reconnecter } from "@/lib/client/socket";
 
 interface EtatAuth {
   utilisateur: UtilisateurClient | null;
@@ -14,6 +16,7 @@ interface EtatAuth {
   connecter: (email: string, password: string) => Promise<void>;
   inscrire: (email: string, password: string, nom: string, role: "abatteur" | "debardeur") => Promise<void>;
   deconnecter: () => Promise<void>;
+  changerRole: (role: "abatteur" | "debardeur") => Promise<void>;
 }
 
 const Ctx = createContext<EtatAuth | null>(null);
@@ -36,6 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       connecter: async (e, p) => setUtilisateur(await connecterApi(e, p)),
       inscrire: async (e, p, n, r) => setUtilisateur(await inscrireApi(e, p, n, r)),
       deconnecter: async () => { await deconnecterApi(); setUtilisateur(null); },
+      changerRole: async (r) => {
+        await changerRoleApi(r);
+        setUtilisateur(await rafraichirSilencieux());
+        reconnecter();
+      },
     }}>
       {children}
     </Ctx.Provider>
