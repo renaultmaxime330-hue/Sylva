@@ -85,11 +85,11 @@ export default function EquipeSection() {
                   <div className="m muted">{roleLabel(m.role)}{m.chefEntreprise ? " · Chef d'entreprise" : ""}</div>
                 </div>
                 {eq.monChefEntreprise && (
-                  <div className="jactions">
-                    <button className="btn ghost" disabled={busy} onClick={() => onToggleChef(m.userId, !m.chefEntreprise)}>
-                      {m.chefEntreprise ? "Retirer chef" : "Nommer chef"}
-                    </button>
-                  </div>
+                  <label className="switch">
+                    <input type="checkbox" checked={m.chefEntreprise} disabled={busy}
+                      onChange={(e) => onToggleChef(m.userId, e.target.checked)} />
+                    <span>Chef d&apos;entreprise</span>
+                  </label>
                 )}
               </div>
             ))}
