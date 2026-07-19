@@ -11,9 +11,10 @@ const corps = z.object({ chefEntreprise: z.boolean() });
 type Ctx = { params: Promise<{ userId: string }> };
 
 /** Nommer/retirer le statut de chef d'entreprise d'un membre — réservé aux
-    chefs existants (contexteEquipeChef). Ne laisse jamais l'équipe sans
-    aucun chef : retirer le dernier est refusé plutôt que d'ouvrir un état
-    où plus personne ne peut nommer de remplaçant. */
+    chefs existants (contexteEquipeChef). Une équipe peut se retrouver sans
+    aucun chef (ex. l'unique chef se retire) : ce n'est pas un état invalide,
+    ça ferme juste l'accès compta/factures jusqu'à ce qu'un membre soit
+    renommé chef via l'accès base de données si besoin. */
 export async function PATCH(req: Request, { params }: Ctx) {
   const ctx = await contexteEquipeChef(req);
   if (estErreur(ctx)) return ctx;
@@ -25,14 +26,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const [cible] = await db.select().from(teamMembers)
     .where(and(eq(teamMembers.userId, userId), eq(teamMembers.teamId, ctx.teamId))).limit(1);
   if (!cible) return NextResponse.json({ erreur: "Membre introuvable." }, { status: 404 });
-
-  if (!parsed.data.chefEntreprise && cible.chefEntreprise) {
-    const chefs = await db.select({ userId: teamMembers.userId }).from(teamMembers)
-      .where(and(eq(teamMembers.teamId, ctx.teamId), eq(teamMembers.chefEntreprise, true)));
-    if (chefs.length <= 1) {
-      return NextResponse.json({ erreur: "Il doit rester au moins un chef d'entreprise dans l'équipe." }, { status: 400 });
-    }
-  }
 
   await db.update(teamMembers).set({ chefEntreprise: parsed.data.chefEntreprise })
     .where(and(eq(teamMembers.userId, userId), eq(teamMembers.teamId, ctx.teamId)));
