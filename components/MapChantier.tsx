@@ -73,10 +73,15 @@ const COULEUR_ROLE: Record<Role, string> = { abatteur: "#C0392B", debardeur: "#2
 
 function roleGlyph(r: Role): string {
   return r === "debardeur"
-    // porteur / débardeuse
-    ? '<path d="M3 16V9a1.4 1.4 0 0 1 1.4-1.4h8L16.5 11H20a1.4 1.4 0 0 1 1.4 1.4V16"/><circle cx="7.5" cy="16.6" r="1.7"/><circle cx="16.5" cy="16.6" r="1.7"/>'
-    // résineux
-    : '<path d="M12 2.8 6.2 11h3.2l-3.9 5.4h13L14.6 11h3.2L12 2.8Z"/><line x1="12" y1="16.4" x2="12" y2="21.2"/>';
+    // porteur : grumes empilées sur le plateau
+    ? '<rect x="1.5" y="14" width="17" height="4" rx="1" fill="#fff" stroke="none"/>'
+      + '<circle cx="5" cy="19.7" r="1.7" fill="#fff" stroke="none"/><circle cx="15" cy="19.7" r="1.7" fill="#fff" stroke="none"/>'
+      + '<circle cx="6.5" cy="10.5" r="2" fill="#fff" stroke="none"/><circle cx="10.2" cy="9.5" r="2" fill="#fff" stroke="none"/><circle cx="13.9" cy="10.5" r="2" fill="#fff" stroke="none"/>'
+    // abatteuse : bras articulé levé vers la tête d'abattage
+    : '<rect x="1.5" y="14" width="10" height="4.5" rx="1" fill="#fff" stroke="none"/>'
+      + '<circle cx="4.5" cy="20" r="1.7" fill="#fff" stroke="none"/><circle cx="9.5" cy="20" r="1.7" fill="#fff" stroke="none"/>'
+      + '<path d="M9.5 13.5 L17.5 6"/>'
+      + '<circle cx="18.5" cy="5" r="2.1" fill="#fff" stroke="none"/>';
 }
 
 function makeLiveBadge(L: LApi, role: Role, couleur: string): Leaflet.DivIcon {
@@ -125,7 +130,7 @@ export default function MapChantier({
   const geomsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const draftLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const equipeLayerRef = useRef<Leaflet.LayerGroup | null>(null);
-  const posMarkerRef = useRef<Leaflet.CircleMarker | null>(null);
+  const posMarkerRef = useRef<Leaflet.Marker | null>(null);
   const [ready, setReady] = useState(false);
 
   const [base, setBase] = useState<BaseId>("plan");
@@ -362,7 +367,7 @@ export default function MapChantier({
       L.marker([p.lat, p.lng], { icon: makeLiveBadge(L, p.role, couleur), zIndexOffset: 1000 })
         .addTo(group)
         .bindTooltip(`${label}<br><span class="ll-sub">${depuis(p.maj)}</span>`, {
-          permanent: true, direction: "top", offset: [0, -6], className: "live-label",
+          direction: "top", offset: [0, -6], className: "live-label",
         });
     }
     group.addTo(map);
@@ -499,9 +504,10 @@ export default function MapChantier({
       const { lat, lng } = await obtenirPosition();
       const L = LRef.current, map = mapRef.current;
       if (!L || !map) return;
+      const role = monRole ?? "abatteur";
       map.setView([lat, lng], 15);
       posMarkerRef.current?.remove();
-      posMarkerRef.current = L.circleMarker([lat, lng], { radius: 7, color: "#fff", weight: 3, fillColor: "#2563EB", fillOpacity: 1 }).addTo(map);
+      posMarkerRef.current = L.marker([lat, lng], { icon: makeLiveBadge(L, role, COULEUR_ROLE[role]), zIndexOffset: 1000 }).addTo(map);
     } catch (e) {
       alert("Position indisponible : " + (e instanceof Error ? e.message : ""));
     }
