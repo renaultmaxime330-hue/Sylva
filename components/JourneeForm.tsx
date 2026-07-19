@@ -1,14 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Journee } from "@/lib/db";
 import { useChantiers } from "@/lib/queries/chantiers";
 import {
   creerJournee, modifierJournee, heuresTravaillees, type JourneeInput, champsVidesJournee,
 } from "@/lib/production";
 import { formatHeures } from "@/lib/format";
-import { IcCheck, IcBack, IcChart, IcClock } from "@/lib/icons";
+import { IcCheck, IcBack, IcChart, IcClock, IcZap } from "@/lib/icons";
+
+function heureActuelle(): string {
+  return new Date().toTimeString().slice(0, 5);
+}
 
 export default function JourneeForm({ initial, chantierId }: { initial?: Journee; chantierId?: string }) {
   const router = useRouter();
@@ -30,6 +34,18 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
 
   const set = <K extends keyof JourneeInput>(k: K, v: JourneeInput[K]) => setF((p) => ({ ...p, [k]: v }));
   const num = (v: string) => (v === "" ? undefined : Number(v));
+
+  // Pas de chantier imposé (ni édition, ni lien depuis une fiche) : si un seul
+  // chantier est en cours, on le présélectionne — un champ de moins à remplir
+  // chaque jour pour l'usage le plus fréquent (une équipe, un chantier actif).
+  useEffect(() => {
+    if (editing || chantierId || !chantiers) return;
+    setF((p) => {
+      if (p.chantierId) return p;
+      const enCours = chantiers.filter((c) => c.statut === "en_cours");
+      return enCours.length === 1 ? { ...p, chantierId: enCours[0].id } : p;
+    });
+  }, [editing, chantierId, chantiers]);
 
   const heures = heuresTravaillees(f);
   const rendement = f.hMachine != null && f.hMachine > 0 && f.volumeM3 != null
@@ -104,13 +120,23 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
         <div className="grid-3">
           <div className="field">
             <label htmlFor="hd">Heure de début</label>
-            <input id="hd" className="input" type="time" value={f.heureDebut}
-              onChange={(e) => set("heureDebut", e.target.value)} />
+            <div className="field-inline">
+              <input id="hd" className="input" type="time" value={f.heureDebut}
+                onChange={(e) => set("heureDebut", e.target.value)} />
+              <button type="button" className="btn" onClick={() => set("heureDebut", heureActuelle())}>
+                <IcZap /> Maintenant
+              </button>
+            </div>
           </div>
           <div className="field">
             <label htmlFor="hf">Heure de fin</label>
-            <input id="hf" className="input" type="time" value={f.heureFin}
-              onChange={(e) => set("heureFin", e.target.value)} />
+            <div className="field-inline">
+              <input id="hf" className="input" type="time" value={f.heureFin}
+                onChange={(e) => set("heureFin", e.target.value)} />
+              <button type="button" className="btn" onClick={() => set("heureFin", heureActuelle())}>
+                <IcZap /> Maintenant
+              </button>
+            </div>
           </div>
           <div className="field">
             <label htmlFor="pause">Pause (min)</label>
@@ -123,6 +149,11 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
             <input id="hmach" className="input" type="number" step="0.1" min="0" inputMode="decimal"
               value={f.hMachine ?? ""} placeholder="0"
               onChange={(e) => set("hMachine", num(e.target.value))} />
+            {heures != null && heures > 0 && f.hMachine == null && (
+              <button type="button" className="hint-fill" onClick={() => set("hMachine", heures)}>
+                Reprendre les {formatHeures(heures)} travaillées
+              </button>
+            )}
           </div>
           <div className="field">
             <label htmlFor="hdep">Temps de déplacement (h)</label>

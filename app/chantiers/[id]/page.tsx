@@ -10,7 +10,7 @@ import StatutPill from "@/components/StatutPill";
 import VolumesChantier from "@/components/VolumesChantier";
 import MapChantier from "@/components/MapChantier";
 import { formatDate, formatSurface, formatGPS } from "@/lib/format";
-import { IcBack, IcEdit, IcTrash, IcChart, IcCheck } from "@/lib/icons";
+import { IcBack, IcEdit, IcTrash, IcChart, IcCheck, IcClock } from "@/lib/icons";
 
 type Tab = "infos" | "carte" | "volumes";
 
@@ -57,6 +57,7 @@ export default function FicheChantier() {
           </p>
         </div>
         <div className="actions">
+          <Link href={`/production/nouvelle?c=${id}`} className="btn primary big"><IcClock /> Saisir une journée</Link>
           <Link href={`/chantiers/${id}/modifier`} className="btn big"><IcEdit /> Modifier</Link>
           <button className="btn danger big" onClick={onSupprimer}><IcTrash /> Supprimer</button>
         </div>
