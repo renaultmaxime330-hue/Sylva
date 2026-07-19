@@ -67,3 +67,11 @@ export async function quitterEquipe(): Promise<void> {
   await apiFetch("/api/teams/me", { method: "DELETE" });
   invalider();
 }
+
+export async function definirChefEquipe(userId: string, chefEntreprise: boolean): Promise<void> {
+  const r = await apiFetch(`/api/teams/membres/${userId}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chefEntreprise }),
+  });
+  if (!r.ok) await lireErreur(r, "Impossible de modifier le statut.");
+  invalider();
+}

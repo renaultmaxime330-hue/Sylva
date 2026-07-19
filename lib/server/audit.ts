@@ -9,7 +9,7 @@ import { auditLog } from "./db/schema";
 
 export type ActionAudit =
   | "auth.register" | "auth.login" | "auth.login_echec" | "auth.logout" | "auth.vol_detecte"
-  | "equipe.creation" | "equipe.adhesion" | "equipe.depart"
+  | "equipe.creation" | "equipe.adhesion" | "equipe.depart" | "equipe.chef_nomme" | "equipe.chef_retire"
   | "suppression";
 
 interface ParamsAudit {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { creerEquipe, rejoindreEquipe, quitterEquipe } from "@/lib/client/teams";
+import { creerEquipe, rejoindreEquipe, quitterEquipe, definirChefEquipe } from "@/lib/client/teams";
 import { useMonEquipe } from "@/lib/queries/equipe";
 import { roleLabel } from "@/lib/profil";
 import { IcUsers, IcCheck, IcSite, IcTruck } from "@/lib/icons";
@@ -37,6 +37,12 @@ export default function EquipeSection() {
     if (!eq || !confirm("Quitter cette équipe ?")) return;
     setBusy(true);
     try { await quitterEquipe(); flash("Équipe quittée."); }
+    finally { setBusy(false); }
+  }
+  async function onToggleChef(userId: string, chef: boolean) {
+    setBusy(true); setErr("");
+    try { await definirChefEquipe(userId, chef); flash(chef ? "Nommé chef d'entreprise ✓" : "Statut de chef retiré."); }
+    catch (e2) { setErr(e2 instanceof Error ? e2.message : "Échec."); }
     finally { setBusy(false); }
   }
 
@@ -78,6 +84,13 @@ export default function EquipeSection() {
                   <div className="t">{m.nom || "Sans nom"}</div>
                   <div className="m muted">{roleLabel(m.role)}{m.chefEntreprise ? " · Chef d'entreprise" : ""}</div>
                 </div>
+                {eq.monChefEntreprise && (
+                  <div className="jactions">
+                    <button className="btn ghost" disabled={busy} onClick={() => onToggleChef(m.userId, !m.chefEntreprise)}>
+                      {m.chefEntreprise ? "Retirer chef" : "Nommer chef"}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
