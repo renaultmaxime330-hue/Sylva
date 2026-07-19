@@ -1,29 +1,26 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useMonEquipe } from "@/lib/queries/equipe";
-import { IcLock } from "@/lib/icons";
 
-/* Bloque une section entière (compta, factures) aux membres qui ne sont
-   pas chef d'entreprise — la navigation les cache déjà, ceci couvre l'accès
-   direct par URL. Le vrai verrou reste côté serveur (contexteEquipeChef) :
-   ceci évite juste un écran d'erreur confus si quelqu'un force le lien. */
+/* Bloque une section entière (compta, factures) aux membres qui ne sont pas
+   chef d'entreprise — la navigation les cache déjà, ceci couvre l'accès
+   direct par URL. Renvoie discrètement vers le tableau de bord, sans écran
+   explicite : la section doit simplement ne pas exister pour eux, pas
+   afficher un message "réservé". Le vrai verrou reste côté serveur
+   (contexteEquipeChef), ce composant n'est qu'une question de discrétion. */
 export default function GardeChef({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { data: equipe, isLoading } = useMonEquipe();
+  const autorise = equipe?.monChefEntreprise ?? false;
 
-  if (isLoading) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
+  useEffect(() => {
+    if (!isLoading && !autorise) router.replace("/");
+  }, [isLoading, autorise, router]);
 
-  if (!equipe?.monChefEntreprise) {
-    return (
-      <div className="card pad empty">
-        <div className="ic"><IcLock /></div>
-        <h3>Réservé au chef d&apos;entreprise</h3>
-        <p>Cette section n&apos;est visible que par le chef d&apos;entreprise de l&apos;équipe.</p>
-        <Link href="/" className="btn primary big">Retour au tableau de bord</Link>
-      </div>
-    );
-  }
+  if (isLoading || !autorise) return null;
 
   return <>{children}</>;
 }
