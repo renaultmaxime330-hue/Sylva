@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useChantiers } from "@/lib/queries/chantiers";
 import { usePresence } from "@/lib/presence";
+import { useAuth } from "@/components/AuthProvider";
 import MapChantier from "@/components/MapChantier";
 import PresenceBar from "@/components/PresenceBar";
 import { IcMap, IcPlus, IcChevron } from "@/lib/icons";
@@ -12,6 +13,7 @@ import { IcMap, IcPlus, IcChevron } from "@/lib/icons";
 function CarteContent() {
   const searchParams = useSearchParams();
   const presence = usePresence();
+  const { utilisateur } = useAuth();
   const { data: chantiers } = useChantiers();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -71,7 +73,10 @@ function CarteContent() {
 
       <PresenceBar {...presence} />
 
-      <MapChantier key={selected.id} chantier={selected} equipiers={presence.equipiers} />
+      <MapChantier
+        key={selected.id} chantier={selected} equipiers={presence.equipiers}
+        moi={presence.moi} monRole={utilisateur?.role} monNom={utilisateur?.nom}
+      />
     </div>
   );
 }

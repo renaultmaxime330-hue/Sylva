@@ -800,10 +800,10 @@
 }
 .presence-chip .pdot {
   width: 9px; height: 9px; border-radius: 50%; flex: none;
-  background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent);
 }
 .presence-chip[data-role="debardeur"] .pdot {
-  background: var(--wood); box-shadow: 0 0 0 3px color-mix(in srgb, var(--wood) 25%, transparent);
+  background: var(--st-done); box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-done) 25%, transparent);
 }
 
 /* ---------- Centre d'alertes ---------- */

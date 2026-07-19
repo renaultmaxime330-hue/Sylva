@@ -14,7 +14,7 @@ import { useGeometries } from "@/lib/queries/geometries";
 import { modifierChantier, obtenirPosition } from "@/lib/chantiers";
 import { formatLongueur } from "@/lib/format";
 import { roleLabel, type Role } from "@/lib/profil";
-import { depuis, type Coequipier } from "@/lib/presence";
+import { depuis, type Coequipier, type MoiPresence } from "@/lib/presence";
 import { emettre } from "@/lib/client/socket";
 import {
   toGeoJSON, toGPX, toKML, downloadText, nomFichier, parseGeoJSONGeometries,
@@ -69,7 +69,7 @@ function makeBadge(L: LApi, type: GeomType, couleur: string): Leaflet.DivIcon {
 }
 
 /* ---------- Coéquipiers en direct ---------- */
-const COULEUR_ROLE: Record<Role, string> = { abatteur: "#2E6B41", debardeur: "#A75F24" };
+const COULEUR_ROLE: Record<Role, string> = { abatteur: "#C0392B", debardeur: "#2E6B41" };
 
 function roleGlyph(r: Role): string {
   return r === "debardeur"
@@ -105,13 +105,17 @@ type BaseId = (typeof BASES)[number]["id"];
 const toLatLng = (p: [number, number]): [number, number] => [p[1], p[0]];
 
 export default function MapChantier({
-  chantier, readOnly = false, editHref, equipiers,
+  chantier, readOnly = false, editHref, equipiers, moi, monRole, monNom,
 }: {
   chantier: Chantier;
   readOnly?: boolean;
   editHref?: string;
   /** Membres de l'équipe à afficher en direct (position partagée). */
   equipiers?: Coequipier[];
+  /** Ma propre position en direct (jamais incluse dans equipiers). */
+  moi?: MoiPresence;
+  monRole?: Role;
+  monNom?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const LRef = useRef<LApi | null>(null);
@@ -126,6 +130,7 @@ export default function MapChantier({
 
   const [base, setBase] = useState<BaseId>("plan");
   const [cadastre, setCadastre] = useState(false);
+  const [traceFiltre, setTraceFiltre] = useState<"aucun" | "abatteur" | "debardeur" | "tous">("aucun");
 
   // Dessin
   const drawTypeRef = useRef<GeomType | null>(null);
@@ -322,34 +327,47 @@ export default function MapChantier({
     geomsLayerRef.current = group;
   }, [ready, geometries]);
 
-  /* ---- Coéquipiers en direct ---- */
+  /* ---- Coéquipiers en direct (+ moi, jamais inclus dans equipiers) ---- */
   useEffect(() => {
     const L = LRef.current, map = mapRef.current;
     if (!ready || !L || !map) return;
     equipeLayerRef.current?.remove();
     equipeLayerRef.current = null;
-    if (!equipiers || equipiers.length === 0) return;
+
+    type Localise = { userId: string; nom: string; role: Role; lat: number; lng: number; precisionM: number | null; maj: string; trace: [number, number][] };
+    const personnes: Localise[] = [];
+    if (moi && monRole && moi.lat != null && moi.lng != null) {
+      personnes.push({ userId: "moi", nom: monNom ?? "Moi", role: monRole, lat: moi.lat, lng: moi.lng, precisionM: moi.precisionM, maj: moi.maj, trace: moi.trace });
+    }
+    for (const e of equipiers ?? []) {
+      if (e.lat == null || e.lng == null) continue;
+      personnes.push({ userId: e.userId, nom: e.nom, role: e.role, lat: e.lat, lng: e.lng, precisionM: e.precisionM, maj: e.maj, trace: e.trace });
+    }
+    if (personnes.length === 0) return;
 
     const group = L.layerGroup();
-    for (const e of equipiers) {
-      if (e.lat == null || e.lng == null) continue;
-      const couleur = COULEUR_ROLE[e.role] ?? "#2563EB";
+    for (const p of personnes) {
+      const couleur = COULEUR_ROLE[p.role] ?? "#2563EB";
+      if (traceFiltre !== "aucun" && (traceFiltre === "tous" || traceFiltre === p.role) && p.trace.length >= 2) {
+        L.polyline(p.trace, { color: couleur, weight: 4, opacity: 0.65, lineCap: "round", lineJoin: "round", interactive: false }).addTo(group);
+      }
       // Cercle de précision quand le GPS est approximatif
-      if (e.precisionM != null && e.precisionM > 25) {
-        L.circle([e.lat, e.lng], {
-          radius: e.precisionM, color: couleur, weight: 1, opacity: 0.5,
+      if (p.precisionM != null && p.precisionM > 25) {
+        L.circle([p.lat, p.lng], {
+          radius: p.precisionM, color: couleur, weight: 1, opacity: 0.5,
           fillColor: couleur, fillOpacity: 0.08, interactive: false,
         }).addTo(group);
       }
-      L.marker([e.lat, e.lng], { icon: makeLiveBadge(L, e.role, couleur), zIndexOffset: 1000 })
+      const label = p.userId === "moi" ? `${p.nom} (toi) — ${roleLabel(p.role)}` : `${p.nom} — ${roleLabel(p.role)}`;
+      L.marker([p.lat, p.lng], { icon: makeLiveBadge(L, p.role, couleur), zIndexOffset: 1000 })
         .addTo(group)
-        .bindTooltip(`${e.nom} — ${roleLabel(e.role)}<br><span class="ll-sub">${depuis(e.maj)}</span>`, {
+        .bindTooltip(`${label}<br><span class="ll-sub">${depuis(p.maj)}</span>`, {
           permanent: true, direction: "top", offset: [0, -6], className: "live-label",
         });
     }
     group.addTo(map);
     equipeLayerRef.current = group;
-  }, [ready, equipiers]);
+  }, [ready, equipiers, moi, monRole, monNom, traceFiltre]);
 
   /* ---- Fond de carte ---- */
   useEffect(() => {
@@ -495,6 +513,7 @@ export default function MapChantier({
     const pts = (equipiers ?? [])
       .filter((e) => e.lat != null && e.lng != null)
       .map((e) => [e.lat!, e.lng!] as [number, number]);
+    if (moi?.lat != null && moi.lng != null) pts.push([moi.lat, moi.lng]);
     if (pts.length === 0) return;
     if (pts.length === 1) map.setView(pts[0], 15);
     else map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 16 });
@@ -543,6 +562,14 @@ export default function MapChantier({
           <button className="chip-btn" onClick={centrerEquipe}>
             <IcUsers /> Voir mon équipe ({equipeLocalisee.length})
           </button>
+        )}
+        {equipiers !== undefined && (
+          <div className="seg-mini" title="Afficher le tracé GPS parcouru">
+            <button data-on={traceFiltre === "aucun"} onClick={() => setTraceFiltre("aucun")}><IcRoute /> Tracé</button>
+            <button data-on={traceFiltre === "abatteur"} onClick={() => setTraceFiltre("abatteur")}>Abatteur</button>
+            <button data-on={traceFiltre === "debardeur"} onClick={() => setTraceFiltre("debardeur")}>Débardeur</button>
+            <button data-on={traceFiltre === "tous"} onClick={() => setTraceFiltre("tous")}>Les deux</button>
+          </div>
         )}
         <div style={{ flex: 1 }} />
         <div className="export-group">

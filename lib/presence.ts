@@ -24,7 +24,22 @@ export interface Coequipier {
   lng: number | null;
   precisionM: number | null;
   maj: string; // ISO — vide tant qu'aucune position n'est reçue
+  trace: [number, number][]; // [lat,lng] accumulés depuis l'activation du partage
 }
+
+/** Ma propre position en direct — le serveur ne me la renvoie jamais (voir
+    lib/server/realtime/io.ts), donc elle ne transite jamais par le réseau :
+    c'est directement la lecture GPS locale. */
+export interface MoiPresence {
+  lat: number | null;
+  lng: number | null;
+  precisionM: number | null;
+  maj: string;
+  trace: [number, number][];
+}
+
+const MOI_INITIAL: MoiPresence = { lat: null, lng: null, precisionM: null, maj: "", trace: [] };
+const MAX_TRACE = 5000; // ~ une journée de terrain à cadence normale, mémoire négligeable
 
 interface PositionEmise {
   lat: number;
@@ -53,19 +68,33 @@ export interface EtatPresence {
   dansEquipe: boolean;
   actif: boolean;
   equipiers: Coequipier[];
+  /** Ma position en direct (jamais renvoyée par le serveur, lue en local). */
+  moi: MoiPresence;
   erreur: string;
   basculer: () => void;
+}
+
+/** Ajoute un point à une trace, en évitant les doublons consécutifs (position
+    inchangée entre deux lectures GPS) et en plafonnant la longueur. */
+function pousserTrace(trace: [number, number][], lat: number, lng: number): [number, number][] {
+  const dernier = trace[trace.length - 1];
+  if (dernier && dernier[0] === lat && dernier[1] === lng) return trace;
+  const next = trace.length >= MAX_TRACE ? trace.slice(1) : trace;
+  return [...next, [lat, lng]];
 }
 
 export function usePresence(): EtatPresence {
   const [dansEquipe, setDansEquipe] = useState(false);
   const [actif, setActif] = useState(false);
   const [equipiers, setEquipiers] = useState<Coequipier[]>([]);
+  const [moi, setMoi] = useState<MoiPresence>(MOI_INITIAL);
   const [erreur, setErreur] = useState("");
 
   const watchRef = useRef<number | null>(null);
   const membresRef = useRef(new Map<string, { nom: string; role: Role }>());
   const posRef = useRef(new Map<string, { lat: number; lng: number; precisionM: number | null; maj: string }>());
+  const traceRef = useRef(new Map<string, [number, number][]>());
+  const moiTraceRef = useRef<[number, number][]>([]);
   const maPosRef = useRef<PositionEmise | null>(null);
   const dernierEnvoiRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,6 +109,7 @@ export function usePresence(): EtatPresence {
         userId: id, nom: m.nom, role: m.role,
         lat: p?.lat ?? null, lng: p?.lng ?? null,
         precisionM: p?.precisionM ?? null, maj: p?.maj ?? "",
+        trace: traceRef.current.get(id) ?? [],
       });
     }
     out.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
@@ -93,8 +123,11 @@ export function usePresence(): EtatPresence {
     listenersRef.current = [];
     membresRef.current.clear();
     posRef.current.clear();
+    traceRef.current.clear();
+    moiTraceRef.current = [];
     maPosRef.current = null;
     setEquipiers([]);
+    setMoi(MOI_INITIAL);
     setActif(false);
   }, []);
 
@@ -131,11 +164,13 @@ export function usePresence(): EtatPresence {
       surEvenement<{ userId: string }>("presence:leave", ({ userId }) => {
         membresRef.current.delete(userId);
         posRef.current.delete(userId);
+        traceRef.current.delete(userId);
         recomposer();
       }),
       surEvenement<PositionRecue>("pos:update", (p) => {
         if (!membresRef.current.has(p.userId)) membresRef.current.set(p.userId, { nom: p.nom, role: p.role });
         posRef.current.set(p.userId, { lat: p.lat, lng: p.lng, precisionM: p.precisionM, maj: p.at });
+        traceRef.current.set(p.userId, pousserTrace(traceRef.current.get(p.userId) ?? [], p.lat, p.lng));
         recomposer();
       }),
     );
@@ -145,10 +180,11 @@ export function usePresence(): EtatPresence {
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         setErreur("");
-        diffuser({
-          lat: pos.coords.latitude, lng: pos.coords.longitude,
-          precisionM: Math.round(pos.coords.accuracy),
-        });
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        const precisionM = Math.round(pos.coords.accuracy);
+        moiTraceRef.current = pousserTrace(moiTraceRef.current, lat, lng);
+        setMoi({ lat, lng, precisionM, maj: new Date().toISOString(), trace: moiTraceRef.current });
+        diffuser({ lat, lng, precisionM });
       },
       (e) => setErreur(
         e.code === e.PERMISSION_DENIED
@@ -179,7 +215,7 @@ export function usePresence(): EtatPresence {
     }
   }, [actif, arreter, demarrer]);
 
-  return { dansEquipe, actif, equipiers, erreur, basculer };
+  return { dansEquipe, actif, equipiers, moi, erreur, basculer };
 }
 
 /** « il y a 2 min » — fraîcheur d'une position. */
