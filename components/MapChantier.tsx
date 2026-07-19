@@ -73,15 +73,13 @@ const COULEUR_ROLE: Record<Role, string> = { abatteur: "#C0392B", debardeur: "#2
 
 function roleGlyph(r: Role): string {
   return r === "debardeur"
-    // porteur : grumes empilées sur le plateau
-    ? '<rect x="1.5" y="14" width="17" height="4" rx="1" fill="#fff" stroke="none"/>'
-      + '<circle cx="5" cy="19.7" r="1.7" fill="#fff" stroke="none"/><circle cx="15" cy="19.7" r="1.7" fill="#fff" stroke="none"/>'
-      + '<circle cx="6.5" cy="10.5" r="2" fill="#fff" stroke="none"/><circle cx="10.2" cy="9.5" r="2" fill="#fff" stroke="none"/><circle cx="13.9" cy="10.5" r="2" fill="#fff" stroke="none"/>'
-    // abatteuse : bras articulé levé vers la tête d'abattage
-    : '<rect x="1.5" y="14" width="10" height="4.5" rx="1" fill="#fff" stroke="none"/>'
-      + '<circle cx="4.5" cy="20" r="1.7" fill="#fff" stroke="none"/><circle cx="9.5" cy="20" r="1.7" fill="#fff" stroke="none"/>'
-      + '<path d="M9.5 13.5 L13.5 8 L18 6"/>'
-      + '<circle cx="19" cy="5.5" r="2" fill="#fff" stroke="none"/>';
+    // porteur : grumes empilées, en traits épais pour rester lisible en petit
+    ? '<path d="M4 8h16" stroke-width="3.4"/>'
+      + '<path d="M4 13h16" stroke-width="3.4"/>'
+      + '<path d="M4 18h16" stroke-width="3.4"/>'
+    // abatteuse : bras-grue épais terminé par une tête pleine
+    : '<path d="M6 19V9h9V4" stroke-width="3.4" fill="none"/>'
+      + '<circle cx="16" cy="4" r="2.6" fill="#fff" stroke="none"/>';
 }
 
 function makeLiveBadge(L: LApi, role: Role, couleur: string): Leaflet.DivIcon {
