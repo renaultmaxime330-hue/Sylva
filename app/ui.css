@@ -1203,14 +1203,44 @@
     justify-content: space-around;
     box-shadow: 0 -6px 24px -12px rgba(24, 33, 24, .25);
   }
-  .tabbar a {
+  .tabbar a, .tabbar button {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
     padding: 8px 4px; border-radius: var(--r-sm); color: var(--text-muted); font-size: 11px; font-weight: 700;
     min-height: 52px; justify-content: center;
+    background: none; border: none; font-family: inherit; cursor: pointer;
     transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
   }
-  .tabbar a svg { width: 23px; height: 23px; }
-  .tabbar a.active { color: var(--accent-strong); background: var(--accent-soft); }
+  .tabbar a svg, .tabbar button svg { width: 23px; height: 23px; }
+  .tabbar a.active, .tabbar button.active { color: var(--accent-strong); background: var(--accent-soft); }
+
+  /* Feuille de menu mobile : le reste des sections, hors barre d'onglets */
+  .menu-sheet-backdrop {
+    position: fixed; inset: 0; z-index: 50; background: rgba(10, 16, 10, .55);
+    display: flex; align-items: flex-end;
+  }
+  .menu-sheet {
+    width: 100%; max-height: 82dvh; overflow-y: auto;
+    background: var(--surface); border-radius: 20px 20px 0 0; border: 1px solid var(--border); border-bottom: none;
+    box-shadow: 0 -12px 32px -8px rgba(24, 33, 24, .5);
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    animation: menu-sheet-up .22s var(--ease);
+  }
+  @keyframes menu-sheet-up { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .menu-sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .menu-sheet-head .brand svg { width: 26px; height: 26px; color: var(--accent); }
+  .menu-sheet-head .brand .name { color: var(--text); font-size: 19px; }
+  .menu-sheet-head .brand .name b { color: var(--accent); }
+  .menu-sheet-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .menu-sheet-grid .nav-item {
+    flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 12px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  }
+  .menu-sheet-grid .nav-item svg { width: 21px; height: 21px; color: var(--accent); }
+  .menu-sheet-grid .nav-item.active { background: var(--accent-soft); border-color: var(--accent); }
+  .menu-sheet-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+  }
   .page-head { margin-bottom: 20px; }
   .page-head .actions { width: 100%; }
   .page-head .actions .btn { flex: 1; }

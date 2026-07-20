@@ -8,7 +8,7 @@ import { useMonEquipe } from "@/lib/queries/equipe";
 import TourPorteurOverlay from "@/components/TourPorteurOverlay";
 import {
   IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck,
-  IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt,
+  IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt, IcMenu,
 } from "@/lib/icons";
 
 type Item = { href: string; label: string; icon: (p: object) => ReactNode; soon?: boolean; chefRequis?: boolean };
@@ -92,6 +92,13 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
   const { data: equipe } = useMonEquipe();
   const estChef = equipe?.monChefEntreprise ?? false;
   const navVisible = NAV.filter((it) => !it.chefRequis || estChef);
+  const [menuOuvert, setMenuOuvert] = useState(false);
+
+  // La barre d'onglets mobile n'a la place que pour 3-4 raccourcis : le
+  // reste (Production, Temps, Engins, Matériel, Rapports, Clients,
+  // Comptabilité, Factures, Réglages...) était sinon totalement inaccessible
+  // au téléphone, sans sidebar pour les montrer.
+  useEffect(() => { setMenuOuvert(false); }, [pathname]);
 
   return (
     <div className="shell">
@@ -179,7 +186,47 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
         <Link href="/chantiers/nouveau" className={pathname === "/chantiers/nouveau" ? "active" : ""}>
           <IcPlus /> Nouveau
         </Link>
+        <button type="button" className={menuOuvert ? "active" : ""} onClick={() => setMenuOuvert((v) => !v)} aria-expanded={menuOuvert}>
+          <IcMenu /> Menu
+        </button>
       </nav>
+
+      {/* Feuille de menu (mobile) : le reste des sections, hors barre d'onglets */}
+      {menuOuvert && (
+        <div className="menu-sheet-backdrop" onClick={() => setMenuOuvert(false)}>
+          <div className="menu-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="menu-sheet-head">
+              <span className="brand" style={{ padding: 0 }}><IcTree /><span className="name">Syl<b>va</b></span></span>
+              <button type="button" className="iconbtn" aria-label="Fermer le menu" onClick={() => setMenuOuvert(false)}>
+                <span style={{ display: "flex", transform: "rotate(45deg)" }}><IcPlus /></span>
+              </button>
+            </div>
+            <div className="menu-sheet-grid">
+              {navVisible.map((it) => {
+                const Icon = it.icon;
+                return (
+                  <Link key={it.href} href={it.href} className={"nav-item" + (isActive(pathname, it.href) ? " active" : "")}>
+                    <Icon /> <span>{it.label}</span>
+                  </Link>
+                );
+              })}
+              <Link href="/reglages" className={"nav-item" + (isActive(pathname, "/reglages") ? " active" : "")}>
+                <IcSettings /> <span>Réglages</span>
+              </Link>
+              <Link href="/alertes" className={"nav-item" + (isActive(pathname, "/alertes") ? " active" : "")}>
+                <IcBell /> <span>Alertes</span>
+                {nonLues > 0 && <span className="badge-nb">{nonLues > 99 ? "99+" : nonLues}</span>}
+              </Link>
+            </div>
+            <div className="menu-sheet-foot">
+              <span className="muted" style={{ fontSize: 12.5 }}>
+                {online ? "En ligne" : "Hors-ligne — connexion nécessaire"}
+              </span>
+              <ThemeButton />
+            </div>
+          </div>
+        </div>
+      )}
 
       <TourPorteurOverlay />
     </div>
