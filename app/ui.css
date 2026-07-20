@@ -1262,21 +1262,25 @@
 .tours-fab-chev svg { width: 15px; height: 15px; }
 .tours-panel {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
-  box-shadow: 0 12px 32px -8px rgba(24, 33, 24, .5); padding: 14px; width: 216px;
+  box-shadow: 0 12px 32px -8px rgba(24, 33, 24, .5); padding: 14px; width: 264px;
 }
-.tours-titre { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+.tours-titre { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 14px; }
 .tours-titre svg { width: 15px; height: 15px; flex: none; }
-.tours-rangee { display: flex; align-items: center; justify-content: center; gap: 16px; }
-.tours-rangee.sm { margin-top: 10px; gap: 10px; }
+.tours-cat { display: flex; align-items: center; gap: 10px; }
+.tours-cat + .tours-cat { margin-top: 10px; }
+.tours-cat-label { flex: 1; font-size: 13.5px; font-weight: 600; }
 .tours-val { font-family: var(--font-mono); font-size: 26px; font-weight: 800; min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; }
+.tours-val.sm { font-size: 16px; min-width: 26px; }
 .tours-btn {
   display: flex; align-items: center; justify-content: center; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; flex: none;
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 .tours-btn.lg { width: 46px; height: 46px; }
 .tours-btn.lg svg { width: 19px; height: 19px; }
-.tours-btn.sm { padding: 6px 14px; font-size: 13px; font-weight: 700; }
+.tours-btn.sm { width: 32px; height: 32px; }
+.tours-btn.sm svg { width: 14px; height: 14px; }
 .tours-btn:hover:not(:disabled) { background: var(--wood-soft); border-color: var(--wood); color: var(--wood); }
 .tours-btn:active:not(:disabled) { transform: scale(.94); }
 .tours-btn:disabled { opacity: .35; cursor: default; }
+.tours-switch { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }

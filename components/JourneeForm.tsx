@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Journee } from "@/lib/db";
+import { useAuth } from "@/components/AuthProvider";
 import { useChantiers } from "@/lib/queries/chantiers";
 import {
   creerJournee, modifierJournee, heuresTravaillees, type JourneeInput, champsVidesJournee,
@@ -18,14 +19,18 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
   const router = useRouter();
   const editing = !!initial;
   const { data: chantiers } = useChantiers();
+  const { utilisateur } = useAuth();
+  const estDebardeur = utilisateur?.role === "debardeur";
 
   const [f, setF] = useState<JourneeInput>(
     initial
       ? {
           chantierId: initial.chantierId, date: initial.date,
           volumeM3: initial.volumeM3, nbPins: initial.nbPins, nbAutres: initial.nbAutres,
+          nbToursPins: initial.nbToursPins, nbToursAutres: initial.nbToursAutres,
           heureDebut: initial.heureDebut ?? "", heureFin: initial.heureFin ?? "",
           pauseMin: initial.pauseMin, hMachine: initial.hMachine, hDeplacement: initial.hDeplacement,
+          hPanne: initial.hPanne,
           notes: initial.notes,
         }
       : champsVidesJournee(chantierId)
@@ -100,18 +105,37 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
               value={f.volumeM3 ?? ""} placeholder="0" autoFocus
               onChange={(e) => set("volumeM3", num(e.target.value))} />
           </div>
-          <div className="field">
-            <label htmlFor="pins">Pins coupés</label>
-            <input id="pins" className="input" type="number" min="0" inputMode="numeric"
-              value={f.nbPins ?? ""} placeholder="0"
-              onChange={(e) => set("nbPins", num(e.target.value))} />
-          </div>
-          <div className="field">
-            <label htmlFor="autres">Autres essences</label>
-            <input id="autres" className="input" type="number" min="0" inputMode="numeric"
-              value={f.nbAutres ?? ""} placeholder="0"
-              onChange={(e) => set("nbAutres", num(e.target.value))} />
-          </div>
+          {estDebardeur ? (
+            <>
+              <div className="field">
+                <label htmlFor="tpins">Tours (pins)</label>
+                <input id="tpins" className="input" type="number" step="0.5" min="0" inputMode="decimal"
+                  value={f.nbToursPins ?? ""} placeholder="0"
+                  onChange={(e) => set("nbToursPins", num(e.target.value))} />
+              </div>
+              <div className="field">
+                <label htmlFor="tautres">Tours (autres essences)</label>
+                <input id="tautres" className="input" type="number" step="0.5" min="0" inputMode="decimal"
+                  value={f.nbToursAutres ?? ""} placeholder="0"
+                  onChange={(e) => set("nbToursAutres", num(e.target.value))} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="field">
+                <label htmlFor="pins">Pins coupés</label>
+                <input id="pins" className="input" type="number" min="0" inputMode="numeric"
+                  value={f.nbPins ?? ""} placeholder="0"
+                  onChange={(e) => set("nbPins", num(e.target.value))} />
+              </div>
+              <div className="field">
+                <label htmlFor="autres">Autres essences</label>
+                <input id="autres" className="input" type="number" min="0" inputMode="numeric"
+                  value={f.nbAutres ?? ""} placeholder="0"
+                  onChange={(e) => set("nbAutres", num(e.target.value))} />
+              </div>
+            </>
+          )}
         </div>
       </fieldset>
 
@@ -160,6 +184,12 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
             <input id="hdep" className="input" type="number" step="0.1" min="0" inputMode="decimal"
               value={f.hDeplacement ?? ""} placeholder="0"
               onChange={(e) => set("hDeplacement", num(e.target.value))} />
+          </div>
+          <div className="field">
+            <label htmlFor="hpanne">Temps de panne (h)</label>
+            <input id="hpanne" className="input" type="number" step="0.1" min="0" inputMode="decimal"
+              value={f.hPanne ?? ""} placeholder="0"
+              onChange={(e) => set("hPanne", num(e.target.value))} />
           </div>
         </div>
       </fieldset>

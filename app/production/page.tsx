@@ -6,11 +6,11 @@ import { useChantiers } from "@/lib/queries/chantiers";
 import { useJournees } from "@/lib/queries/journees";
 import {
   agreger, filtrePeriode, serieParJour, serieParMois,
-  heuresTravaillees, rendementJournee, nbArbres, supprimerJournee,
+  heuresTravaillees, rendementJournee, nbArbres, nbTours, supprimerJournee,
 } from "@/lib/production";
 import { formatHeures, formatM3 } from "@/lib/format";
 import ProductionChart from "@/components/ProductionChart";
-import { IcChart, IcPlus, IcClock, IcSite, IcTree, IcEdit, IcTrash, IcCheck } from "@/lib/icons";
+import { IcChart, IcPlus, IcClock, IcSite, IcTree, IcTruck, IcEdit, IcTrash, IcCheck } from "@/lib/icons";
 
 export default function ProductionPage() {
   const [filtreChantier, setFiltreChantier] = useState<string>("tous");
@@ -62,6 +62,9 @@ export default function ProductionPage() {
         <div className="stat"><div className="k"><IcChart /> Ce mois</div><div className="v">{mois.volume.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small>m³</small></div></div>
         <div className="stat"><div className="k"><IcChart /> Cette année</div><div className="v">{annee.volume.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small>m³</small></div></div>
         <div className="stat"><div className="k"><IcTree /> Arbres (année)</div><div className="v">{annee.arbres.toLocaleString("fr-FR")}</div></div>
+        {annee.tours > 0 && (
+          <div className="stat"><div className="k"><IcTruck /> Tours de porteur (année)</div><div className="v">{annee.tours.toLocaleString("fr-FR")}</div></div>
+        )}
         <div className="stat"><div className="k"><IcClock /> Heures (mois)</div><div className="v" style={{ fontSize: 26 }}>{formatHeures(mois.heures)}</div></div>
         <div className="stat"><div className="k"><IcCheck /> Rendement moyen</div><div className="v">{annee.rendement != null ? annee.rendement.toLocaleString("fr-FR", { maximumFractionDigits: 2 }) : "—"}<small>m³/h</small></div></div>
       </div>
@@ -105,6 +108,7 @@ export default function ProductionPage() {
                     <div className="m">
                       {j.volumeM3 != null && <span><b>{formatM3(j.volumeM3)}</b></span>}
                       {nbArbres(j) > 0 && <span>{nbArbres(j)} arbres</span>}
+                      {nbTours(j) > 0 && <span>{nbTours(j)} tour{nbTours(j) > 1 ? "s" : ""} de porteur</span>}
                       {h != null && <span>{formatHeures(h)}</span>}
                       {rdt != null && <span><b>{rdt.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} m³/h</b></span>}
                     </div>

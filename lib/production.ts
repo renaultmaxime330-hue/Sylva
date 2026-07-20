@@ -15,12 +15,14 @@ export function champsVidesJournee(chantierId = ""): JourneeInput {
     volumeM3: undefined,
     nbPins: undefined,
     nbAutres: undefined,
+    nbToursPins: undefined,
+    nbToursAutres: undefined,
     heureDebut: "",
     heureFin: "",
     pauseMin: undefined,
     hMachine: undefined,
     hDeplacement: undefined,
-    nbToursPorteur: undefined,
+    hPanne: undefined,
     notes: "",
   };
 }
@@ -89,6 +91,11 @@ export function nbArbres(j: Journee): number {
   return (j.nbPins ?? 0) + (j.nbAutres ?? 0);
 }
 
+/** Tours de porteur, toutes essences confondues — demi-tours possibles. */
+export function nbTours(j: Journee): number {
+  return (j.nbToursPins ?? 0) + (j.nbToursAutres ?? 0);
+}
+
 /* ---------- Agrégations ---------- */
 
 export interface Totaux {
@@ -96,30 +103,42 @@ export interface Totaux {
   arbres: number;
   pins: number;
   autres: number;
+  tours: number;
+  toursPins: number;
+  toursAutres: number;
   heures: number;
   hMachine: number;
   hDeplacement: number;
+  hPanne: number;
   rendement: number | undefined; // m³/h moyen
   nbJours: number;
 }
 
 export function agreger(journees: Journee[]): Totaux {
-  let volume = 0, arbres = 0, pins = 0, autres = 0, heures = 0, hMachine = 0, hDeplacement = 0;
+  let volume = 0, arbres = 0, pins = 0, autres = 0, toursPins = 0, toursAutres = 0;
+  let heures = 0, hMachine = 0, hDeplacement = 0, hPanne = 0;
   for (const j of journees) {
     volume += j.volumeM3 ?? 0;
     pins += j.nbPins ?? 0;
     autres += j.nbAutres ?? 0;
     arbres += nbArbres(j);
+    toursPins += j.nbToursPins ?? 0;
+    toursAutres += j.nbToursAutres ?? 0;
     heures += heuresTravaillees(j) ?? 0;
     hMachine += j.hMachine ?? 0;
     hDeplacement += j.hDeplacement ?? 0;
+    hPanne += j.hPanne ?? 0;
   }
   return {
     volume: Math.round(volume * 100) / 100,
     arbres, pins, autres,
+    tours: Math.round((toursPins + toursAutres) * 100) / 100,
+    toursPins: Math.round(toursPins * 100) / 100,
+    toursAutres: Math.round(toursAutres * 100) / 100,
     heures: Math.round(heures * 100) / 100,
     hMachine: Math.round(hMachine * 100) / 100,
     hDeplacement: Math.round(hDeplacement * 100) / 100,
+    hPanne: Math.round(hPanne * 100) / 100,
     rendement: hMachine > 0 ? Math.round((volume / hMachine) * 100) / 100 : undefined,
     nbJours: journees.length,
   };

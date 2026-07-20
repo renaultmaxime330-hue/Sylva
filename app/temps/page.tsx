@@ -6,7 +6,7 @@ import { useChantiers } from "@/lib/queries/chantiers";
 import { useJournees } from "@/lib/queries/journees";
 import { agreger, filtrePeriode } from "@/lib/production";
 import { formatHeures } from "@/lib/format";
-import { IcClock, IcTruck, IcPin, IcSite, IcPlus } from "@/lib/icons";
+import { IcClock, IcTruck, IcPin, IcSite, IcPlus, IcWarning } from "@/lib/icons";
 
 type Periode = "semaine" | "mois" | "annee";
 const LABELS: Record<Periode, string> = { semaine: "cette semaine", mois: "ce mois", annee: "cette année" };
@@ -61,6 +61,7 @@ export default function TempsPage() {
         <div className="stat"><div className="k"><IcClock /> Heures travaillées</div><div className="v" style={{ fontSize: 26 }}>{formatHeures(t.heures)}</div></div>
         <div className="stat"><div className="k"><IcTruck /> Heures machine</div><div className="v" style={{ fontSize: 26 }}>{formatHeures(t.hMachine)}</div></div>
         <div className="stat"><div className="k"><IcPin /> Déplacement</div><div className="v" style={{ fontSize: 26 }}>{formatHeures(t.hDeplacement)}</div></div>
+        <div className="stat"><div className="k"><IcWarning /> Temps de panne</div><div className="v" style={{ fontSize: 26 }}>{formatHeures(t.hPanne)}</div></div>
         <div className="stat"><div className="k"><IcSite /> Jours travaillés</div><div className="v">{t.nbJours}</div></div>
       </div>
 
@@ -87,6 +88,7 @@ export default function TempsPage() {
                   <div className="m">
                     <span><b>{formatHeures(r.tot.heures)}</b> travaillées</span>
                     <span>{formatHeures(r.tot.hMachine)} machine</span>
+                    {r.tot.hPanne > 0 && <span>{formatHeures(r.tot.hPanne)} panne</span>}
                     <span>{r.tot.nbJours} jour{r.tot.nbJours > 1 ? "s" : ""}</span>
                   </div>
                 </div>

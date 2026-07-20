@@ -1,0 +1,1 @@
+ALTER TABLE "journees" DROP COLUMN "nb_tours_porteur";

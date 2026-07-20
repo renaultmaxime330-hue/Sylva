@@ -106,15 +106,17 @@ export interface Journee {
   date: string;         // YYYY-MM-DD
   // Production
   volumeM3?: number;
-  nbPins?: number;
-  nbAutres?: number;
+  nbPins?: number;      // arbres abattus, pins (abatteur)
+  nbAutres?: number;    // arbres abattus, autres essences (abatteur)
+  nbToursPins?: number;   // tours de porteur, pins (débardeur) — demi-tours possibles
+  nbToursAutres?: number; // tours de porteur, autres essences (débardeur)
   // Temps
   heureDebut?: string;  // HH:MM
   heureFin?: string;    // HH:MM
   pauseMin?: number;    // minutes de pause
   hMachine?: number;    // heures machine (tronçonneuse/abatteuse)
   hDeplacement?: number; // heures de déplacement
-  nbToursPorteur?: number; // tours de porteur (débardage), demi-tours possibles
+  hPanne?: number;       // heures de panne/immobilisation
   notes: string;
   createdAt: string;
   updatedAt: string;

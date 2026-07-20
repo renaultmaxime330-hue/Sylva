@@ -128,7 +128,9 @@ export const journeeSchema = z.object({
   pauseMin: z.number().int().min(0).max(1440).nullable().optional(),
   hMachine: z.number().finite().min(0).max(1000).nullable().optional(),
   hDeplacement: z.number().finite().min(0).max(1000).nullable().optional(),
-  nbToursPorteur: z.number().finite().min(0).max(10_000).nullable().optional(),
+  hPanne: z.number().finite().min(0).max(1000).nullable().optional(),
+  nbToursPins: z.number().finite().min(0).max(10_000).nullable().optional(),
+  nbToursAutres: z.number().finite().min(0).max(10_000).nullable().optional(),
   notes: z.string().max(LONG).default(""),
 });
 export const journeePatchSchema = partiel(journeeSchema.shape);
