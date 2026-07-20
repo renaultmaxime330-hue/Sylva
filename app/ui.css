@@ -1276,12 +1276,18 @@
 }
 .tours-hint svg { width: 17px; height: 17px; flex: none; color: var(--wood); }
 .tours-hint:hover { color: var(--text); border-color: var(--wood); }
-.tours-drag { cursor: grab; touch-action: none; user-select: none; }
+/* -webkit-touch-callout supprime le menu contextuel d'appui long iOS, qui
+   sinon coupe le geste de glissé en plein milieu (pointercancel). */
+.tours-drag {
+  cursor: grab; touch-action: none; user-select: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
 .tours-drag:active { cursor: grabbing; }
 .tours-fab {
   display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-radius: 999px;
   background: var(--wood); color: #fff; border: none; box-shadow: 0 8px 22px -6px rgba(24, 33, 24, .45);
   font-weight: 800; font-size: 15px; cursor: grab; font-variant-numeric: tabular-nums; touch-action: none; user-select: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
 }
 .tours-fab:active { cursor: grabbing; }
 .tours-fab svg { width: 19px; height: 19px; flex: none; }
@@ -1316,6 +1322,7 @@
 .tours-switch { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }
 .tours-resize {
   position: absolute; right: 2px; bottom: 2px; width: 18px; height: 18px; cursor: nwse-resize; touch-action: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
   background:
     linear-gradient(135deg, transparent 0 40%, var(--border) 40% 46%, transparent 46% 60%, var(--border) 60% 66%, transparent 66%);
 }

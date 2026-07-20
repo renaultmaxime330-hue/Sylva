@@ -146,6 +146,15 @@ export default function TourPorteurOverlay() {
     if (d?.bougé) ecrire(POS_KEY, d.dernier);
     return d?.bougé ?? false;
   }
+  /* iOS/Android peuvent couper la séquence de pointer en cours de route (menu
+     contextuel d'appui long, geste système) : le navigateur envoie alors
+     pointercancel au lieu de pointerup, et sans ce handler le glissé restait
+     bloqué au milieu du geste — impossible de le reprendre avant un reload. */
+  function annulerDrag() {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (d?.bougé) ecrire(POS_KEY, d.dernier);
+  }
 
   function demarrerResize(e: React.PointerEvent) {
     e.stopPropagation();
@@ -161,6 +170,11 @@ export default function TourPorteurOverlay() {
     setTaille(next);
   }
   function finResize() {
+    const r = resizeRef.current;
+    resizeRef.current = null;
+    if (r) ecrire(TAILLE_KEY, r.derniere);
+  }
+  function annulerResize() {
     const r = resizeRef.current;
     resizeRef.current = null;
     if (r) ecrire(TAILLE_KEY, r.derniere);
@@ -255,6 +269,7 @@ export default function TourPorteurOverlay() {
             onPointerDown={demarrerDrag}
             onPointerMove={bougerDrag}
             onPointerUp={(e) => { if (finDrag()) e.preventDefault(); }}
+            onPointerCancel={annulerDrag}
           >
             <IcTruck /> Tours de porteur
           </div>
@@ -302,6 +317,7 @@ export default function TourPorteurOverlay() {
             onPointerDown={demarrerResize}
             onPointerMove={bougerResize}
             onPointerUp={finResize}
+            onPointerCancel={annulerResize}
             aria-hidden="true"
             title="Glisser pour agrandir / rétrécir"
           />
@@ -312,6 +328,7 @@ export default function TourPorteurOverlay() {
         onPointerDown={demarrerDrag}
         onPointerMove={bougerDrag}
         onPointerUp={(e) => { if (!finDrag()) setOuvert((v) => !v); else e.preventDefault(); }}
+        onPointerCancel={annulerDrag}
         aria-expanded={ouvert}
       >
         <IcTruck /> <b>{total}</b>
