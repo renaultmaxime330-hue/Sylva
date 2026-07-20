@@ -10,13 +10,36 @@ import { IcTruck, IcPlus, IcMinus, IcChevron } from "@/lib/icons";
 const AUJOURDHUI = () => new Date().toISOString().slice(0, 10);
 
 interface Valeurs { pins: number; autres: number }
+interface Pos { x: number; y: number }
+
+const POS_KEY = "sylva-tours-pos";
+const TAILLE_KEY = "sylva-tours-taille";
+const DESACTIVE_KEY = "sylva-tours-desactive";
+const TAILLE_MIN = 0.8;
+const TAILLE_MAX = 1.6;
+const MARGE = 8;
+
+function lire<T>(cle: string, defaut: T): T {
+  try {
+    const v = localStorage.getItem(cle);
+    return v == null ? defaut : (JSON.parse(v) as T);
+  } catch { return defaut; }
+}
+function ecrire(cle: string, v: unknown) {
+  try { localStorage.setItem(cle, JSON.stringify(v)); } catch { /* ignore */ }
+}
+
+function clamp(pos: Pos, largeur: number, hauteur: number): Pos {
+  const maxX = Math.max(MARGE, window.innerWidth - largeur - MARGE);
+  const maxY = Math.max(MARGE, window.innerHeight - hauteur - MARGE);
+  return { x: Math.min(Math.max(pos.x, MARGE), maxX), y: Math.min(Math.max(pos.y, MARGE), maxY) };
+}
 
 /** Overlay flottant (PC, tablette, téléphone) pour compter les tours de
     porteur au fil de la journée, par essence, sans passer par le formulaire
-    complet. Un seul chantier "en cours" → pas d'ambiguïté sur où compter ;
-    sinon l'overlay ne s'affiche pas (ambigu, autant passer par la saisie
-    normale). Le pas (1 ou ½ tour) est un réglage partagé par les deux
-    catégories plutôt que 4 boutons par ligne — plus rapide à l'usage. */
+    complet. Déplaçable (glisser la poignée), redimensionnable (poignée en
+    coin), et désactivable via la croix — dans ce cas seule une petite pastille
+    de réouverture reste visible, à la dernière position connue. */
 export default function TourPorteurOverlay() {
   const { utilisateur } = useAuth();
   const { data: chantiers } = useChantiers();
@@ -24,6 +47,19 @@ export default function TourPorteurOverlay() {
   const [ouvert, setOuvert] = useState(false);
   const [demiTour, setDemiTour] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const [pos, setPos] = useState<Pos | null>(null);
+  const [taille, setTaille] = useState(1);
+  const [desactive, setDesactive] = useState(false);
+  const rootRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ dx: number; dy: number; bougé: boolean; dernier: Pos } | null>(null);
+  const resizeRef = useRef<{ x0: number; y0: number; taille0: number; derniere: number } | null>(null);
+
+  useEffect(() => {
+    setPos(lire<Pos | null>(POS_KEY, null));
+    setTaille(lire(TAILLE_KEY, 1));
+    setDesactive(lire(DESACTIVE_KEY, false));
+  }, []);
 
   const enCours = useMemo(() => (chantiers ?? []).filter((c) => c.statut === "en_cours"), [chantiers]);
   const chantier = enCours.length === 1 ? enCours[0] : null;
@@ -56,7 +92,97 @@ export default function TourPorteurOverlay() {
     setLocal(valeursRef.current);
   }, [chantier, date, journees, journeeDuJour]);
 
-  if (utilisateur?.role !== "debardeur" || !chantier) return null;
+  // Garde la pastille/le panneau dans l'écran si la fenêtre est redimensionnée.
+  useEffect(() => {
+    function onResize() {
+      const el = rootRef.current;
+      if (!pos || !el) return;
+      setPos((p) => (p ? clamp(p, el.offsetWidth, el.offsetHeight) : p));
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [pos]);
+
+  const estDebardeur = utilisateur?.role === "debardeur";
+
+  /* Les callbacks pointermove/pointerup peuvent s'enchaîner dans le même tick
+     (avant que React ne relise `pos`/`taille` à jour dans une nouvelle
+     closure) : la valeur "actuelle" pour la persistance vient donc du ref
+     (dernier/derniere), jamais de l'état React lu dans ces fonctions. */
+  function demarrerDrag(e: React.PointerEvent) {
+    const el = rootRef.current;
+    if (!el) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = el.getBoundingClientRect();
+    const base = pos ?? { x: rect.left, y: rect.top };
+    dragRef.current = { dx: e.clientX - base.x, dy: e.clientY - base.y, bougé: false, dernier: base };
+  }
+  function bougerDrag(e: React.PointerEvent) {
+    const d = dragRef.current;
+    const el = rootRef.current;
+    if (!d || !el) return;
+    const next = { x: e.clientX - d.dx, y: e.clientY - d.dy };
+    if (Math.abs(next.x - d.dernier.x) > 3 || Math.abs(next.y - d.dernier.y) > 3) d.bougé = true;
+    const clampé = clamp(next, el.offsetWidth, el.offsetHeight);
+    d.dernier = clampé;
+    setPos(clampé);
+  }
+  function finDrag() {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (d?.bougé) ecrire(POS_KEY, d.dernier);
+    return d?.bougé ?? false;
+  }
+
+  function demarrerResize(e: React.PointerEvent) {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    resizeRef.current = { x0: e.clientX, y0: e.clientY, taille0: taille, derniere: taille };
+  }
+  function bougerResize(e: React.PointerEvent) {
+    const r = resizeRef.current;
+    if (!r) return;
+    const delta = ((e.clientX - r.x0) + (e.clientY - r.y0)) / 220;
+    const next = Math.round((Math.min(TAILLE_MAX, Math.max(TAILLE_MIN, r.taille0 + delta))) * 20) / 20;
+    r.derniere = next;
+    setTaille(next);
+  }
+  function finResize() {
+    const r = resizeRef.current;
+    resizeRef.current = null;
+    if (r) ecrire(TAILLE_KEY, r.derniere);
+  }
+
+  function desactiver() {
+    setDesactive(true);
+    ecrire(DESACTIVE_KEY, true);
+    setOuvert(false);
+  }
+  function reactiver() {
+    setDesactive(false);
+    ecrire(DESACTIVE_KEY, false);
+  }
+
+  if (!estDebardeur || !chantier) return null;
+
+  const style: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
+    : {};
+
+  if (desactive) {
+    return (
+      <button
+        ref={rootRef as React.RefObject<HTMLButtonElement>}
+        className="tours-reopen"
+        style={style}
+        onClick={reactiver}
+        aria-label="Réactiver le compteur de tours de porteur"
+        title="Compteur de tours (désactivé)"
+      >
+        <IcTruck />
+      </button>
+    );
+  }
 
   const total = Math.round((local.pins + local.autres) * 2) / 2;
 
@@ -86,10 +212,24 @@ export default function TourPorteurOverlay() {
   }
 
   return (
-    <div className="tours-overlay" data-ouvert={ouvert}>
+    <div
+      ref={rootRef as React.RefObject<HTMLDivElement>}
+      className="tours-overlay"
+      data-ouvert={ouvert}
+      style={{ ...style, transform: `scale(${taille})`, transformOrigin: pos ? "top left" : "bottom right" }}
+    >
+      <button className="tours-close" aria-label="Désactiver le compteur de tours" onClick={desactiver}>
+        <span style={{ display: "flex", transform: "rotate(45deg)" }}><IcPlus /></span>
+      </button>
+
       {ouvert && (
         <div className="tours-panel">
-          <div className="tours-titre muted">
+          <div
+            className="tours-titre muted tours-drag"
+            onPointerDown={demarrerDrag}
+            onPointerMove={bougerDrag}
+            onPointerUp={(e) => { if (finDrag()) e.preventDefault(); }}
+          >
             <IcTruck /> Tours de porteur — {chantier.nom}
           </div>
 
@@ -118,9 +258,24 @@ export default function TourPorteurOverlay() {
             <input type="checkbox" checked={demiTour} onChange={(e) => setDemiTour(e.target.checked)} />
             <span>Par demi-tour</span>
           </label>
+
+          <div
+            className="tours-resize"
+            onPointerDown={demarrerResize}
+            onPointerMove={bougerResize}
+            onPointerUp={finResize}
+            aria-hidden="true"
+            title="Glisser pour agrandir / rétrécir"
+          />
         </div>
       )}
-      <button className="tours-fab" onClick={() => setOuvert((v) => !v)} aria-expanded={ouvert}>
+      <button
+        className="tours-fab"
+        onPointerDown={demarrerDrag}
+        onPointerMove={bougerDrag}
+        onPointerUp={(e) => { if (!finDrag()) setOuvert((v) => !v); else e.preventDefault(); }}
+        aria-expanded={ouvert}
+      >
         <IcTruck /> <b>{total}</b>
         <span className="tours-fab-chev" data-ouvert={ouvert}><IcChevron /></span>
       </button>
