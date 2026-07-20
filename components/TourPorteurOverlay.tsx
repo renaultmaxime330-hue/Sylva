@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { useChantiers } from "@/lib/queries/chantiers";
 import { useJournees } from "@/lib/queries/journees";
@@ -175,11 +176,24 @@ export default function TourPorteurOverlay() {
     ecrire(DESACTIVE_KEY, false);
   }
 
-  if (!estDebardeur || !chantier) return null;
+  if (!estDebardeur) return null;
 
   const style: React.CSSProperties = pos
     ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
     : {};
+
+  /* Plutôt que de disparaître sans explication (impossible à diagnostiquer
+     à distance sur un appareil qu'on ne peut pas inspecter), indique POURQUOI
+     rien ne s'affiche — la cause la plus probable en usage réel : aucun
+     chantier n'est marqué "en cours". */
+  if (!chantier) {
+    if (chantiers === undefined) return null; // chantiers pas encore chargés
+    return (
+      <Link href="/chantiers" className="tours-hint" style={style}>
+        <IcTruck /> <span>Aucun chantier en cours</span>
+      </Link>
+    );
+  }
 
   if (desactive) {
     return (

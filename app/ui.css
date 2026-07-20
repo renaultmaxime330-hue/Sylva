@@ -1247,9 +1247,10 @@
 }
 
 /* ---------- Overlay compteur de tours de porteur ---------- */
-.tours-overlay { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.tours-overlay, .tours-hint { position: fixed; right: 16px; bottom: 16px; z-index: 40; }
+.tours-overlay { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 @media (max-width: 860px) {
-  .tours-overlay { bottom: calc(76px + env(safe-area-inset-bottom)); right: 12px; }
+  .tours-overlay, .tours-hint { bottom: calc(76px + env(safe-area-inset-bottom)); right: 12px; }
 }
 .tours-close {
   position: absolute; top: -8px; right: -8px; z-index: 1; width: 22px; height: 22px; border-radius: 50%;
@@ -1267,6 +1268,14 @@
 }
 .tours-reopen:hover { opacity: 1; color: var(--wood); border-color: var(--wood); }
 .tours-reopen svg { width: 17px; height: 17px; }
+.tours-hint {
+  position: fixed; z-index: 40; display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+}
+.tours-hint svg { width: 17px; height: 17px; flex: none; color: var(--wood); }
+.tours-hint:hover { color: var(--text); border-color: var(--wood); }
 .tours-drag { cursor: grab; touch-action: none; user-select: none; }
 .tours-drag:active { cursor: grabbing; }
 .tours-fab {
