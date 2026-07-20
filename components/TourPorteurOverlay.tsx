@@ -18,6 +18,11 @@ const DESACTIVE_KEY = "sylva-tours-desactive";
 const TAILLE_MIN = 0.8;
 const TAILLE_MAX = 1.6;
 const MARGE = 8;
+// Un tap au doigt bouge naturellement de quelques px entre pointerdown et
+// pointerup (contact peau/écran) — avec un seuil trop serré (mesuré en plus
+// image par image plutôt que sur le déplacement total), presque aucun tap
+// tactile n'ouvrait le panneau : tout était pris pour un glissé.
+const SEUIL_TAP = 10;
 
 function lire<T>(cle: string, defaut: T): T {
   try {
@@ -52,7 +57,7 @@ export default function TourPorteurOverlay() {
   const [taille, setTaille] = useState(1);
   const [desactive, setDesactive] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
-  const dragRef = useRef<{ dx: number; dy: number; bougé: boolean; dernier: Pos } | null>(null);
+  const dragRef = useRef<{ dx: number; dy: number; bougé: boolean; dernier: Pos; depart: Pos } | null>(null);
   const resizeRef = useRef<{ x0: number; y0: number; taille0: number; derniere: number } | null>(null);
 
   useEffect(() => {
@@ -120,14 +125,16 @@ export default function TourPorteurOverlay() {
     e.currentTarget.setPointerCapture(e.pointerId);
     const rect = el.getBoundingClientRect();
     const base = pos ?? { x: rect.left, y: rect.top };
-    dragRef.current = { dx: e.clientX - base.x, dy: e.clientY - base.y, bougé: false, dernier: base };
+    dragRef.current = { dx: e.clientX - base.x, dy: e.clientY - base.y, bougé: false, dernier: base, depart: { x: e.clientX, y: e.clientY } };
   }
   function bougerDrag(e: React.PointerEvent) {
     const d = dragRef.current;
     const el = rootRef.current;
     if (!d || !el) return;
+    // Déplacement total depuis le point de départ du geste (pas image par
+    // image) : seule mesure fiable pour distinguer un tap tactile d'un glissé.
+    if (Math.abs(e.clientX - d.depart.x) > SEUIL_TAP || Math.abs(e.clientY - d.depart.y) > SEUIL_TAP) d.bougé = true;
     const next = { x: e.clientX - d.dx, y: e.clientY - d.dy };
-    if (Math.abs(next.x - d.dernier.x) > 3 || Math.abs(next.y - d.dernier.y) > 3) d.bougé = true;
     const clampé = clamp(next, el.offsetWidth, el.offsetHeight);
     d.dernier = clampé;
     setPos(clampé);
