@@ -247,3 +247,15 @@ export const notifs = pgTable("notifs", {
   lu: boolean("lu").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("notifs_cle_idx").on(t.teamId, t.cle)]);
+
+/** Un abonnement par appareil/navigateur (PC, téléphone, tablette peuvent
+    chacun avoir le leur pour le même utilisateur) — endpoint unique côté
+    navigateur, sert de clé naturelle pour retrouver/retirer un abonnement. */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("push_subscriptions_user_idx").on(t.userId)]);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import EntrepriseSection from "@/components/EntrepriseSection";
 import EquipeSection from "@/components/EquipeSection";
+import NotificationsSection from "@/components/NotificationsSection";
 import { useAuth } from "@/components/AuthProvider";
 import { IcSettings, IcDownload, IcCheck, IcLogout } from "@/lib/icons";
 
@@ -71,6 +72,9 @@ export default function ReglagesPage() {
           </p>
         )}
       </div>
+
+      {/* Notifications push */}
+      <NotificationsSection />
 
       {/* Mon entreprise (pour les devis/factures) */}
       <EntrepriseSection />

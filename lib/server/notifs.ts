@@ -2,18 +2,25 @@ import { and, eq, inArray, like } from "drizzle-orm";
 import { db } from "./db/client";
 import { notifs } from "./db/schema";
 import { emettreEquipe } from "./realtime/emit";
+import { envoyerPushEquipe } from "./webpush";
 
 type NotifType = "entretien" | "stock" | "chantier" | "carte";
 
 /** Dédoublonnage par `cle` (une même cause = une seule alerte), utilisé à la
     fois par la route POST /api/notifs (carte) et par le moteur d'alertes
-    déduites (entretien/stock/chantier) — un seul point d'écriture. */
+    déduites (entretien/stock/chantier) — un seul point d'écriture. Le push
+    est fire-and-forget : une notification en retard/échouée ne doit jamais
+    faire échouer l'action qui l'a déclenchée. */
 export async function creerNotifServeur(
   teamId: string, type: NotifType, cle: string, titre: string, detail: string, href?: string | null
 ) {
   const [row] = await db.insert(notifs).values({ teamId, type, cle, titre, detail, href: href ?? null })
     .onConflictDoNothing({ target: [notifs.teamId, notifs.cle] }).returning();
-  if (row) emettreEquipe(teamId, "notifs", row.id, "create");
+  if (row) {
+    emettreEquipe(teamId, "notifs", row.id, "create");
+    void envoyerPushEquipe(teamId, { title: titre, body: detail, url: href ?? "/alertes" })
+      .catch((err) => console.error("envoyerPushEquipe a échoué :", err));
+  }
   return row ?? null;
 }
 

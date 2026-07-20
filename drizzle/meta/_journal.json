@@ -43,6 +43,13 @@
       "when": 1784532895479,
       "tag": "0005_motionless_morg",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784535272052,
+      "tag": "0006_redundant_starbolt",
+      "breakpoints": true
     }
   ]
 }
