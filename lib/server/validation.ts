@@ -129,11 +129,21 @@ export const journeeSchema = z.object({
   hMachine: z.number().finite().min(0).max(1000).nullable().optional(),
   hDeplacement: z.number().finite().min(0).max(1000).nullable().optional(),
   hPanne: z.number().finite().min(0).max(1000).nullable().optional(),
-  nbToursPins: z.number().finite().min(0).max(10_000).nullable().optional(),
-  nbToursAutres: z.number().finite().min(0).max(10_000).nullable().optional(),
+  /** Tours de porteur par catégorie : { [tourCategorieId]: nombre de tours }. */
+  tours: z.record(z.string().max(COURT), z.number().finite().min(0).max(10_000)).nullable().optional(),
   notes: z.string().max(LONG).default(""),
 });
 export const journeePatchSchema = partiel(journeeSchema.shape);
+
+export const tourCategorieSchema = z.object({
+  nom: z.string().trim().min(1, "Nom requis").max(COURT),
+  couleur: z.string().trim().min(1).max(20).default("#2E6B41"),
+  capaciteTourSteres: z.number().finite().min(0).max(1000).nullable().optional(),
+  coefficientSterage: z.number().finite().min(0).max(3).default(0.7),
+  ordre: z.number().int().min(0).max(10_000).default(0),
+  actif: z.boolean().default(true),
+});
+export const tourCategoriePatchSchema = partiel(tourCategorieSchema.shape);
 
 export const geometrieSchema = z.object({
   chantierId: z.string().uuid(),

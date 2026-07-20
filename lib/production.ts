@@ -15,8 +15,7 @@ export function champsVidesJournee(chantierId = ""): JourneeInput {
     volumeM3: undefined,
     nbPins: undefined,
     nbAutres: undefined,
-    nbToursPins: undefined,
-    nbToursAutres: undefined,
+    tours: undefined,
     heureDebut: "",
     heureFin: "",
     pauseMin: undefined,
@@ -91,9 +90,11 @@ export function nbArbres(j: Journee): number {
   return (j.nbPins ?? 0) + (j.nbAutres ?? 0);
 }
 
-/** Tours de porteur, toutes essences confondues — demi-tours possibles. */
-export function nbTours(j: Journee): number {
-  return (j.nbToursPins ?? 0) + (j.nbToursAutres ?? 0);
+/** Tours de porteur, toutes catégories confondues — demi-tours possibles. */
+export function nbTours(j: Pick<Journee, "tours">): number {
+  const t = j.tours;
+  if (!t) return 0;
+  return Object.values(t).reduce((s, n) => s + (n || 0), 0);
 }
 
 /* ---------- Agrégations ---------- */
@@ -104,8 +105,6 @@ export interface Totaux {
   pins: number;
   autres: number;
   tours: number;
-  toursPins: number;
-  toursAutres: number;
   heures: number;
   hMachine: number;
   hDeplacement: number;
@@ -115,15 +114,14 @@ export interface Totaux {
 }
 
 export function agreger(journees: Journee[]): Totaux {
-  let volume = 0, arbres = 0, pins = 0, autres = 0, toursPins = 0, toursAutres = 0;
+  let volume = 0, arbres = 0, pins = 0, autres = 0, tours = 0;
   let heures = 0, hMachine = 0, hDeplacement = 0, hPanne = 0;
   for (const j of journees) {
     volume += j.volumeM3 ?? 0;
     pins += j.nbPins ?? 0;
     autres += j.nbAutres ?? 0;
     arbres += nbArbres(j);
-    toursPins += j.nbToursPins ?? 0;
-    toursAutres += j.nbToursAutres ?? 0;
+    tours += nbTours(j);
     heures += heuresTravaillees(j) ?? 0;
     hMachine += j.hMachine ?? 0;
     hDeplacement += j.hDeplacement ?? 0;
@@ -132,9 +130,7 @@ export function agreger(journees: Journee[]): Totaux {
   return {
     volume: Math.round(volume * 100) / 100,
     arbres, pins, autres,
-    tours: Math.round((toursPins + toursAutres) * 100) / 100,
-    toursPins: Math.round(toursPins * 100) / 100,
-    toursAutres: Math.round(toursAutres * 100) / 100,
+    tours: Math.round(tours * 100) / 100,
     heures: Math.round(heures * 100) / 100,
     hMachine: Math.round(hMachine * 100) / 100,
     hDeplacement: Math.round(hDeplacement * 100) / 100,

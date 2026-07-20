@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/server/db/client";
-import { teams, teamMembers } from "@/lib/server/db/schema";
+import { teams, teamMembers, tourCategories } from "@/lib/server/db/schema";
 import { utilisateurCourant } from "@/lib/server/auth/session";
 import { limiteMutationDepassee } from "@/lib/server/auth/rateLimit";
 import { tracer } from "@/lib/server/audit";
+import { CATEGORIES_TOURS_DEFAUT } from "@/lib/server/tourCategoriesDefaults";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans I/O/0/1, ambigus à recopier à la main
 
@@ -42,6 +43,9 @@ export async function POST(req: Request) {
         await tx.insert(teamMembers).values({
           teamId: t.id, userId: u.id, role: u.role, chefEntreprise: true, nom: u.nom,
         });
+        await tx.insert(tourCategories).values(
+          CATEGORIES_TOURS_DEFAUT.map((c) => ({ ...c, teamId: t.id }))
+        );
         return t;
       });
       tracer({ teamId: equipe.id, userId: u.id, action: "equipe.creation", entityType: "teams", entityId: equipe.id, req });

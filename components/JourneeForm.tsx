@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { Journee } from "@/lib/db";
 import { useAuth } from "@/components/AuthProvider";
 import { useChantiers } from "@/lib/queries/chantiers";
+import { useTourCategories } from "@/lib/queries/tourCategories";
 import {
   creerJournee, modifierJournee, heuresTravaillees, type JourneeInput, champsVidesJournee,
 } from "@/lib/production";
@@ -19,15 +20,17 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
   const router = useRouter();
   const editing = !!initial;
   const { data: chantiers } = useChantiers();
+  const { data: categories } = useTourCategories();
   const { utilisateur } = useAuth();
   const estDebardeur = utilisateur?.role === "debardeur";
+  const categoriesActives = (categories ?? []).filter((c) => c.actif).sort((a, b) => a.ordre - b.ordre);
 
   const [f, setF] = useState<JourneeInput>(
     initial
       ? {
           chantierId: initial.chantierId, date: initial.date,
           volumeM3: initial.volumeM3, nbPins: initial.nbPins, nbAutres: initial.nbAutres,
-          nbToursPins: initial.nbToursPins, nbToursAutres: initial.nbToursAutres,
+          tours: initial.tours,
           heureDebut: initial.heureDebut ?? "", heureFin: initial.heureFin ?? "",
           pauseMin: initial.pauseMin, hMachine: initial.hMachine, hDeplacement: initial.hDeplacement,
           hPanne: initial.hPanne,
@@ -39,6 +42,11 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
 
   const set = <K extends keyof JourneeInput>(k: K, v: JourneeInput[K]) => setF((p) => ({ ...p, [k]: v }));
   const num = (v: string) => (v === "" ? undefined : Number(v));
+  const setTour = (catId: string, v: string) => setF((p) => {
+    const tours = { ...p.tours };
+    if (v === "") delete tours[catId]; else tours[catId] = Number(v);
+    return { ...p, tours };
+  });
 
   // Pas de chantier imposé (ni édition, ni lien depuis une fiche) : si un seul
   // chantier est en cours, on le présélectionne — un champ de moins à remplir
@@ -106,20 +114,20 @@ export default function JourneeForm({ initial, chantierId }: { initial?: Journee
               onChange={(e) => set("volumeM3", num(e.target.value))} />
           </div>
           {estDebardeur ? (
-            <>
-              <div className="field">
-                <label htmlFor="tpins">Tours (pins)</label>
-                <input id="tpins" className="input" type="number" step="0.5" min="0" inputMode="decimal"
-                  value={f.nbToursPins ?? ""} placeholder="0"
-                  onChange={(e) => set("nbToursPins", num(e.target.value))} />
-              </div>
-              <div className="field">
-                <label htmlFor="tautres">Tours (autres essences)</label>
-                <input id="tautres" className="input" type="number" step="0.5" min="0" inputMode="decimal"
-                  value={f.nbToursAutres ?? ""} placeholder="0"
-                  onChange={(e) => set("nbToursAutres", num(e.target.value))} />
-              </div>
-            </>
+            categoriesActives.length === 0 ? (
+              <p className="muted" style={{ fontSize: 13.5 }}>
+                Aucune catégorie configurée — <a href="/tours">gère tes catégories de tours de porteur</a>.
+              </p>
+            ) : (
+              categoriesActives.map((c) => (
+                <div className="field" key={c.id}>
+                  <label htmlFor={`tour-${c.id}`}>Tours ({c.nom})</label>
+                  <input id={`tour-${c.id}`} className="input" type="number" step="0.5" min="0" inputMode="decimal"
+                    value={f.tours?.[c.id] ?? ""} placeholder="0"
+                    onChange={(e) => setTour(c.id, e.target.value)} />
+                </div>
+              ))
+            )
           ) : (
             <>
               <div className="field">

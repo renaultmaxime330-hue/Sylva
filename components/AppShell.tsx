@@ -7,7 +7,7 @@ import { useNotifs } from "@/lib/queries/notifs";
 import { useMonEquipe } from "@/lib/queries/equipe";
 import TourPorteurOverlay from "@/components/TourPorteurOverlay";
 import {
-  IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck,
+  IcTree, IcDashboard, IcSite, IcMap, IcChart, IcClock, IcTruck, IcLogs,
   IcBox, IcEuro, IcUsers, IcBell, IcPlus, IcSun, IcMoon, IcWifiOff, IcSettings, IcReport, IcReceipt, IcMenu,
 } from "@/lib/icons";
 
@@ -19,6 +19,7 @@ const NAV: Item[] = [
   { href: "/carte", label: "Carte", icon: IcMap },
   { href: "/production", label: "Production", icon: IcChart },
   { href: "/temps", label: "Temps de travail", icon: IcClock },
+  { href: "/tours", label: "Tours de porteur", icon: IcLogs },
   { href: "/engins", label: "Engins", icon: IcTruck },
   { href: "/materiel", label: "Matériel", icon: IcBox },
   { href: "/compta", label: "Comptabilité", icon: IcEuro, chefRequis: true },

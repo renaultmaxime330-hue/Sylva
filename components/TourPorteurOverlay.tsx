@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { useChantiers } from "@/lib/queries/chantiers";
 import { useJournees } from "@/lib/queries/journees";
+import { useTourCategories } from "@/lib/queries/tourCategories";
 import { creerJournee, modifierJournee } from "@/lib/production";
 import { IcTruck, IcPlus, IcMinus, IcChevron } from "@/lib/icons";
 
 const AUJOURDHUI = () => new Date().toISOString().slice(0, 10);
 
-interface Valeurs { pins: number; autres: number }
+type Valeurs = Record<string, number>;
 interface Pos { x: number; y: number }
 
 const POS_KEY = "sylva-tours-pos";
@@ -50,6 +51,11 @@ export default function TourPorteurOverlay() {
   const { utilisateur } = useAuth();
   const { data: chantiers } = useChantiers();
   const { data: journees } = useJournees();
+  const { data: categories } = useTourCategories();
+  const categoriesActives = useMemo(
+    () => (categories ?? []).filter((c) => c.actif).sort((a, b) => a.ordre - b.ordre),
+    [categories]
+  );
   const [ouvert, setOuvert] = useState(false);
   const [demiTour, setDemiTour] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -89,9 +95,9 @@ export default function TourPorteurOverlay() {
      et perdre un incrément. `local` ne sert qu'à déclencher le re-render. */
   const semenceRef = useRef<string | null>(null);
   const idRef = useRef<string | null>(null);
-  const valeursRef = useRef<Valeurs>({ pins: 0, autres: 0 });
+  const valeursRef = useRef<Valeurs>({});
   const colaRef = useRef<Promise<void>>(Promise.resolve());
-  const [local, setLocal] = useState<Valeurs>({ pins: 0, autres: 0 });
+  const [local, setLocal] = useState<Valeurs>({});
 
   useEffect(() => {
     if (!chantier || journees === undefined) return;
@@ -99,7 +105,7 @@ export default function TourPorteurOverlay() {
     if (semenceRef.current === cle) return;
     semenceRef.current = cle;
     idRef.current = journeeDuJour?.id ?? null;
-    valeursRef.current = { pins: journeeDuJour?.nbToursPins ?? 0, autres: journeeDuJour?.nbToursAutres ?? 0 };
+    valeursRef.current = { ...(journeeDuJour?.tours ?? {}) };
     setLocal(valeursRef.current);
   }, [chantier, date, journees, journeeDuJour]);
 
@@ -224,25 +230,25 @@ export default function TourPorteurOverlay() {
     );
   }
 
-  const total = Math.round((local.pins + local.autres) * 2) / 2;
+  const total = Math.round(Object.values(local).reduce((s, n) => s + (n || 0), 0) * 2) / 2;
 
-  function ajuster(cat: "pins" | "autres", signe: 1 | -1) {
+  function ajuster(catId: string, signe: 1 | -1) {
     const pas = demiTour ? 0.5 : 1;
-    const actuel = valeursRef.current[cat];
+    const actuel = valeursRef.current[catId] ?? 0;
     const cible = Math.max(0, Math.round((actuel + signe * pas) * 2) / 2);
     if (cible === actuel) return;
-    valeursRef.current = { ...valeursRef.current, [cat]: cible };
+    valeursRef.current = { ...valeursRef.current, [catId]: cible };
     setLocal(valeursRef.current);
 
-    const champ = cat === "pins" ? "nbToursPins" : "nbToursAutres";
+    const tours = valeursRef.current;
     colaRef.current = colaRef.current
       .then(async () => {
         setBusy(true);
         try {
           if (idRef.current) {
-            await modifierJournee(idRef.current, { [champ]: cible });
+            await modifierJournee(idRef.current, { tours });
           } else {
-            idRef.current = await creerJournee({ chantierId: chantier!.id, date, [champ]: cible, notes: "" });
+            idRef.current = await creerJournee({ chantierId: chantier!.id, date, tours, notes: "" });
           }
         } finally {
           setBusy(false);
@@ -286,26 +292,28 @@ export default function TourPorteurOverlay() {
             <div className="tours-chantier-nom muted">{chantier.nom}</div>
           )}
 
-          <div className="tours-cat">
-            <span className="tours-cat-label">Pins</span>
-            <button className="tours-btn sm" disabled={local.pins <= 0} onClick={() => ajuster("pins", -1)} aria-label="Retirer un tour de pins">
-              <IcMinus />
-            </button>
-            <span className="tours-val sm">{local.pins}</span>
-            <button className="tours-btn sm" onClick={() => ajuster("pins", 1)} aria-label="Ajouter un tour de pins">
-              <IcPlus />
-            </button>
-          </div>
-          <div className="tours-cat">
-            <span className="tours-cat-label">Autres essences</span>
-            <button className="tours-btn sm" disabled={local.autres <= 0} onClick={() => ajuster("autres", -1)} aria-label="Retirer un tour d'autres essences">
-              <IcMinus />
-            </button>
-            <span className="tours-val sm">{local.autres}</span>
-            <button className="tours-btn sm" onClick={() => ajuster("autres", 1)} aria-label="Ajouter un tour d'autres essences">
-              <IcPlus />
-            </button>
-          </div>
+          {categoriesActives.length === 0 ? (
+            <Link href="/tours" className="tours-chantier-nom muted" style={{ display: "block" }}>
+              Configure au moins une catégorie dans Tours de porteur →
+            </Link>
+          ) : (
+            categoriesActives.map((c) => {
+              const v = local[c.id] ?? 0;
+              return (
+                <div className="tours-cat" key={c.id}>
+                  <span className="tours-cat-dot" style={{ background: c.couleur }} />
+                  <span className="tours-cat-label">{c.nom}</span>
+                  <button className="tours-btn sm" disabled={v <= 0} onClick={() => ajuster(c.id, -1)} aria-label={`Retirer un tour de ${c.nom}`}>
+                    <IcMinus />
+                  </button>
+                  <span className="tours-val sm">{v}</span>
+                  <button className="tours-btn sm" onClick={() => ajuster(c.id, 1)} aria-label={`Ajouter un tour de ${c.nom}`}>
+                    <IcPlus />
+                  </button>
+                </div>
+              );
+            })
+          )}
 
           <label className="switch tours-switch">
             <input type="checkbox" checked={demiTour} onChange={(e) => setDemiTour(e.target.checked)} />

@@ -108,8 +108,7 @@ export interface Journee {
   volumeM3?: number;
   nbPins?: number;      // arbres abattus, pins (abatteur)
   nbAutres?: number;    // arbres abattus, autres essences (abatteur)
-  nbToursPins?: number;   // tours de porteur, pins (débardeur) — demi-tours possibles
-  nbToursAutres?: number; // tours de porteur, autres essences (débardeur)
+  tours?: Record<string, number>; // tours de porteur par catégorie (id TourCategorie), demi-tours possibles
   // Temps
   heureDebut?: string;  // HH:MM
   heureFin?: string;    // HH:MM
@@ -118,6 +117,19 @@ export interface Journee {
   hDeplacement?: number; // heures de déplacement
   hPanne?: number;       // heures de panne/immobilisation
   notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ---------- Tours de porteur : catégories de qualité (Canter, Caisse…) ---------- */
+export interface TourCategorie {
+  id: string;
+  nom: string;
+  couleur: string;
+  capaciteTourSteres?: number; // stères apparents transportés par tour plein, pour cette catégorie
+  coefficientSterage: number;  // m³ de bois plein par stère (foisonnement) — ~0,7 en usage courant
+  ordre: number;
+  actif: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -142,13 +142,35 @@ export const journees = pgTable("journees", {
   hMachine: doublePrecision("h_machine"),
   hDeplacement: doublePrecision("h_deplacement"),
   hPanne: doublePrecision("h_panne"),
-  nbToursPins: doublePrecision("nb_tours_pins"),
-  nbToursAutres: doublePrecision("nb_tours_autres"),
+  /** Tours de porteur par catégorie dynamique : { [tourCategories.id]: nombre de tours,
+      demi-tours possibles }. */
+  tours: jsonb("tours"),
   notes: text("notes").notNull().default(""),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("journees_team_idx").on(t.teamId, t.date)]);
+
+/** Catégories de qualité de bois pour les tours de porteur (Canter, Caisse,
+    Trituration…), configurables par équipe — nom, capacité et coefficient de
+    stérage éditables, pas de valeurs figées en dur côté code. */
+export const tourCategories = pgTable("tour_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  nom: text("nom").notNull(),
+  couleur: text("couleur").notNull().default("#2E6B41"),
+  /** Volume apparent (stères) transporté par tour plein pour cette catégorie —
+      dépend du porteur et de la façon dont ce bois s'empile, laissé vide tant
+      que l'équipe ne l'a pas mesuré/configuré (pas de capacité inventée). */
+  capaciteTourSteres: doublePrecision("capacite_tour_steres"),
+  /** m³ de bois plein par stère (coefficient d'empilement/foisonnement),
+      ~0,7 en usage courant, éditable par catégorie (essence/qualité). */
+  coefficientSterage: doublePrecision("coefficient_sterage").notNull().default(0.7),
+  ordre: integer("ordre").notNull().default(0),
+  actif: boolean("actif").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("tour_categories_team_idx").on(t.teamId)]);
 
 export const engins = pgTable("engins", {
   id: uuid("id").primaryKey().defaultRandom(),
