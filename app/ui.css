@@ -1283,8 +1283,10 @@
   position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
   box-shadow: 0 12px 32px -8px rgba(24, 33, 24, .5); padding: 14px 20px 20px 14px; width: 264px;
 }
-.tours-titre { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 14px; }
+.tours-titre { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
 .tours-titre svg { width: 15px; height: 15px; flex: none; }
+.tours-chantier-nom { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.tours-chantier { width: 100%; margin-bottom: 12px; font-size: 13px; padding: 6px 10px; }
 .tours-cat { display: flex; align-items: center; gap: 10px; }
 .tours-cat + .tours-cat { margin-top: 10px; }
 .tours-cat-label { flex: 1; font-size: 13.5px; font-weight: 600; }

@@ -62,7 +62,12 @@ export default function TourPorteurOverlay() {
   }, []);
 
   const enCours = useMemo(() => (chantiers ?? []).filter((c) => c.statut === "en_cours"), [chantiers]);
-  const chantier = enCours.length === 1 ? enCours[0] : null;
+  const [chantierId, setChantierId] = useState<string | null>(null);
+  useEffect(() => {
+    if (enCours.length === 0) { setChantierId(null); return; }
+    setChantierId((id) => (id && enCours.some((c) => c.id === id) ? id : enCours[0].id));
+  }, [enCours]);
+  const chantier = enCours.find((c) => c.id === chantierId) ?? null;
   const date = AUJOURDHUI();
   const journeeDuJour = useMemo(
     () => (journees ?? []).find((j) => j.chantierId === chantier?.id && j.date === date) ?? null,
@@ -230,8 +235,20 @@ export default function TourPorteurOverlay() {
             onPointerMove={bougerDrag}
             onPointerUp={(e) => { if (finDrag()) e.preventDefault(); }}
           >
-            <IcTruck /> Tours de porteur — {chantier.nom}
+            <IcTruck /> Tours de porteur
           </div>
+          {enCours.length > 1 ? (
+            <select
+              className="select tours-chantier"
+              value={chantier.id}
+              onChange={(e) => setChantierId(e.target.value)}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {enCours.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
+            </select>
+          ) : (
+            <div className="tours-chantier-nom muted">{chantier.nom}</div>
+          )}
 
           <div className="tours-cat">
             <span className="tours-cat-label">Pins</span>
