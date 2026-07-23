@@ -31,8 +31,19 @@ export const CATEGORIES_BOIS = [
   "Chauffage",
 ];
 
+/* Dossier libre pour ranger/trier les chantiers (secteur, année, client…). */
+export interface ChantierDossier {
+  id: string;
+  nom: string;
+  couleur: string;
+  ordre: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Chantier {
   id: string;
+  dossierId?: string;
   nom: string;
   proprietaire: string;
   client: string;

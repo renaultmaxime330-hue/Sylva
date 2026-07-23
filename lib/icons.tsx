@@ -136,3 +136,6 @@ export const IcZap = (p: P) => (
 export const IcLock = (p: P) => (
   <svg {...base(p)}><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
 );
+export const IcFolder = (p: P) => (
+  <svg {...base(p)}><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8A2 2 0 0 1 21 9.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>
+);

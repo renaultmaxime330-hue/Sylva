@@ -6,6 +6,7 @@ import { useState } from "react";
 import { totalVolume, type Chantier } from "@/lib/db";
 import { supprimerChantier, marquerTermine } from "@/lib/chantiers";
 import { useChantier } from "@/lib/queries/chantiers";
+import { useDossiers } from "@/lib/queries/dossiers";
 import StatutPill from "@/components/StatutPill";
 import VolumesChantier from "@/components/VolumesChantier";
 import MapChantier from "@/components/MapChantier";
@@ -87,7 +88,10 @@ export default function FicheChantier() {
 
 /* ---------- Onglet Infos ---------- */
 function OngletInfos({ chantier: c }: { chantier: Chantier }) {
+  const { data: dossiers } = useDossiers();
+  const dossier = dossiers?.find((d) => d.id === c.dossierId);
   const cells: { k: string; v: string; mono?: boolean }[] = [
+    { k: "Dossier", v: dossier?.nom ?? "—" },
     { k: "Propriétaire", v: c.proprietaire || "—" },
     { k: "Client", v: c.client || "—" },
     { k: "Commune", v: c.commune || "—" },

@@ -10,7 +10,7 @@ declare global {
 
 export type EntiteDonnee =
   | "chantiers" | "clients" | "geometries" | "journees" | "engins" | "entretiens"
-  | "materiel" | "finances" | "factures" | "notifs" | "tourCategories";
+  | "materiel" | "finances" | "factures" | "notifs" | "tourCategories" | "dossiers";
 
 /** Prévient l'équipe qu'une donnée a changé, pour invalidation du cache côté
     client. N'échoue jamais silencieusement de façon bruyante : si le serveur

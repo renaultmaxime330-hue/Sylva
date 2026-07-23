@@ -4,21 +4,32 @@ import Link from "next/link";
 import { useState } from "react";
 import { STATUTS, type Statut } from "@/lib/db";
 import { useChantiers } from "@/lib/queries/chantiers";
+import { useDossiers } from "@/lib/queries/dossiers";
 import StatutPill from "@/components/StatutPill";
-import { IcSite, IcPlus, IcChevron, IcSearch } from "@/lib/icons";
+import DossiersManager from "@/components/DossiersManager";
+import { IcSite, IcPlus, IcChevron, IcSearch, IcFolder, IcSettings } from "@/lib/icons";
+
+const SANS_DOSSIER = "sans-dossier";
 
 export default function ChantiersPage() {
   const [q, setQ] = useState("");
   const [filtre, setFiltre] = useState<Statut | "tous">("tous");
+  const [filtreDossier, setFiltreDossier] = useState<string>("tous");
+  const [gererOuvert, setGererOuvert] = useState(false);
 
   const { data: chantiers, isError, error } = useChantiers();
+  const { data: dossiers } = useDossiers();
 
   if (isError) return <div className="muted" style={{ padding: 40 }}>Erreur : {error instanceof Error ? error.message : "échec du chargement."}</div>;
   if (!chantiers) return <div className="muted" style={{ padding: 40 }}>Chargement…</div>;
 
+  const dossierDe = (id?: string) => (dossiers ?? []).find((d) => d.id === id);
+
   const ql = q.trim().toLowerCase();
   const filtres = chantiers.filter((c) => {
     if (filtre !== "tous" && c.statut !== filtre) return false;
+    if (filtreDossier === SANS_DOSSIER && c.dossierId) return false;
+    if (filtreDossier !== "tous" && filtreDossier !== SANS_DOSSIER && c.dossierId !== filtreDossier) return false;
     if (!ql) return true;
     return [c.nom, c.proprietaire, c.commune, c.numParcelle, c.essence, c.client]
       .join(" ").toLowerCase().includes(ql);
@@ -56,6 +67,29 @@ export default function ChantiersPage() {
         </div>
       </div>
 
+      <div className="toolbar">
+        <div className="filters" style={{ flex: 1 }}>
+          <button className="chip-btn" data-on={filtreDossier === "tous"} onClick={() => setFiltreDossier("tous")}>
+            <IcFolder /> Tous les dossiers
+          </button>
+          {(dossiers ?? []).sort((a, b) => a.ordre - b.ordre).map((d) => (
+            <button key={d.id} className="chip-btn" data-on={filtreDossier === d.id} onClick={() => setFiltreDossier(d.id)}>
+              <span className="dossier-dot" style={{ background: d.couleur }} /> {d.nom}
+            </button>
+          ))}
+          {chantiers.some((c) => !c.dossierId) && (
+            <button className="chip-btn" data-on={filtreDossier === SANS_DOSSIER} onClick={() => setFiltreDossier(SANS_DOSSIER)}>
+              Sans dossier
+            </button>
+          )}
+        </div>
+        <button type="button" className="btn" onClick={() => setGererOuvert((v) => !v)}>
+          <IcSettings /> {gererOuvert ? "Fermer" : "Gérer les dossiers"}
+        </button>
+      </div>
+
+      {gererOuvert && <DossiersManager onDone={() => setGererOuvert(false)} />}
+
       {filtres.length === 0 ? (
         <div className="card pad empty">
           <div className="ic"><IcSite /></div>
@@ -71,11 +105,16 @@ export default function ChantiersPage() {
         </div>
       ) : (
         <div className="terrain-list">
-          {filtres.map((c) => (
+          {filtres.map((c) => {
+            const dossier = dossierDe(c.dossierId);
+            return (
             <Link key={c.id} href={`/chantiers/${c.id}`} className="terrain-row">
               <span className="terrain-tag">{c.numParcelle || "—"}</span>
               <div className="terrain-body">
-                <div className="t">{c.nom}</div>
+                <div className="t">
+                  {c.nom}
+                  {dossier && <span className="dossier-badge"><span className="dossier-dot" style={{ background: dossier.couleur }} />{dossier.nom}</span>}
+                </div>
                 <div className="m">
                   {c.proprietaire && <span>{c.proprietaire}</span>}
                   {c.commune && <>·<span>{c.commune}</span></>}
@@ -88,7 +127,8 @@ export default function ChantiersPage() {
               <StatutPill statut={c.statut} sm />
               <span className="terrain-chev"><IcChevron /></span>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

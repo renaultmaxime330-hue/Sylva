@@ -4,14 +4,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { STATUTS, type Chantier, type Statut } from "@/lib/db";
 import { creerChantier, modifierChantier, obtenirPosition, type ChantierInput } from "@/lib/chantiers";
+import { useDossiers } from "@/lib/queries/dossiers";
+import { creerDossier, champsVidesDossier } from "@/lib/dossiers";
 import { IcPin, IcCheck, IcBack } from "@/lib/icons";
 import { formatGPS } from "@/lib/format";
 
 const PEUPLEMENTS = ["Futaie régulière", "Futaie irrégulière", "Taillis", "Éclaircie", "Coupe rase", "Chablis", "Autre"];
+const NOUVEAU_DOSSIER = "__nouveau__";
 
 function champsVides(): ChantierInput {
   return {
-    nom: "", proprietaire: "", client: "", numParcelle: "", commune: "",
+    nom: "", dossierId: undefined, proprietaire: "", client: "", numParcelle: "", commune: "",
     lat: undefined, lng: undefined, surfaceHa: undefined,
     typePeuplement: "", essence: "", dateDebut: "", dateFin: "",
     statut: "a_faire", notes: "",
@@ -21,10 +24,12 @@ function champsVides(): ChantierInput {
 export default function ChantierForm({ initial }: { initial?: Chantier }) {
   const router = useRouter();
   const editing = !!initial;
+  const { data: dossiers } = useDossiers();
+  const [nouveauDossierNom, setNouveauDossierNom] = useState("");
   const [f, setF] = useState<ChantierInput>(
     initial
       ? {
-          nom: initial.nom, proprietaire: initial.proprietaire, client: initial.client,
+          nom: initial.nom, dossierId: initial.dossierId, proprietaire: initial.proprietaire, client: initial.client,
           numParcelle: initial.numParcelle, commune: initial.commune,
           lat: initial.lat, lng: initial.lng, surfaceHa: initial.surfaceHa,
           typePeuplement: initial.typePeuplement, essence: initial.essence,
@@ -56,7 +61,7 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!f.nom.trim()) return;
+    if (!f.nom.trim() || f.dossierId === NOUVEAU_DOSSIER) return;
     setSaving(true);
     try {
       if (editing && initial) {
@@ -78,6 +83,37 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
         <input id="nom" className="input" value={f.nom} required autoFocus
           placeholder="Ex. Coupe rase des Grands Pins"
           onChange={(e) => set("nom", e.target.value)} />
+      </div>
+
+      <div className="field">
+        <label htmlFor="dossier">Dossier <span className="opt">(pour trier tes chantiers)</span></label>
+        {f.dossierId === NOUVEAU_DOSSIER ? (
+          <div className="field-inline">
+            <input className="input" autoFocus placeholder="Nom du nouveau dossier"
+              value={nouveauDossierNom} onChange={(e) => setNouveauDossierNom(e.target.value)} />
+            <button type="button" className="btn"
+              disabled={!nouveauDossierNom.trim()}
+              onClick={async () => {
+                const id = await creerDossier({ ...champsVidesDossier(), nom: nouveauDossierNom.trim() });
+                set("dossierId", id);
+                setNouveauDossierNom("");
+              }}>
+              <IcCheck /> Créer
+            </button>
+            <button type="button" className="btn ghost" onClick={() => { set("dossierId", initial?.dossierId); setNouveauDossierNom(""); }}>
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <select id="dossier" className="select" value={f.dossierId ?? ""}
+            onChange={(e) => set("dossierId", e.target.value === NOUVEAU_DOSSIER ? NOUVEAU_DOSSIER : (e.target.value || undefined))}>
+            <option value="">— Aucun dossier —</option>
+            {(dossiers ?? []).sort((a, b) => a.ordre - b.ordre).map((d) => (
+              <option key={d.id} value={d.id}>{d.nom}</option>
+            ))}
+            <option value={NOUVEAU_DOSSIER}>+ Nouveau dossier…</option>
+          </select>
+        )}
       </div>
 
       <div className="grid-2">
@@ -187,7 +223,7 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
       </div>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <button type="submit" className="btn primary big" disabled={saving || !f.nom.trim()}>
+        <button type="submit" className="btn primary big" disabled={saving || !f.nom.trim() || f.dossierId === NOUVEAU_DOSSIER}>
           <IcCheck /> {saving ? "Enregistrement…" : editing ? "Enregistrer les modifications" : "Créer le chantier"}
         </button>
         <button type="button" className="btn big" onClick={() => router.back()}>

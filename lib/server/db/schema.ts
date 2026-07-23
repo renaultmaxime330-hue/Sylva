@@ -89,10 +89,24 @@ export const clients = pgTable("clients", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("clients_team_idx").on(t.teamId)]);
 
+/** Dossiers libres pour ranger/trier les chantiers (par secteur, par année,
+    par client…) — purement organisationnel, un chantier reste utilisable
+    sans dossier. */
+export const chantierDossiers = pgTable("chantier_dossiers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  nom: text("nom").notNull(),
+  couleur: text("couleur").notNull().default("#2E6B41"),
+  ordre: integer("ordre").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("chantier_dossiers_team_idx").on(t.teamId)]);
+
 export const chantiers = pgTable("chantiers", {
   id: uuid("id").primaryKey().defaultRandom(),
   teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
   clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+  dossierId: uuid("dossier_id").references(() => chantierDossiers.id, { onDelete: "set null" }),
   nom: text("nom").notNull(),
   proprietaire: text("proprietaire").notNull().default(""),
   client: text("client").notNull().default(""),

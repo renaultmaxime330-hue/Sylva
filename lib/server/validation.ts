@@ -36,8 +36,16 @@ export const volumeCategorieSchema = z.object({
 export const dateOptionnelle = z.string().max(40).nullable().optional()
   .transform((v) => (v === "" || v == null ? null : v));
 
+export const dossierSchema = z.object({
+  nom: z.string().trim().min(1, "Nom requis").max(COURT),
+  couleur: z.string().trim().min(1).max(20).default("#2E6B41"),
+  ordre: z.number().int().min(0).max(10_000).default(0),
+});
+export const dossierPatchSchema = partiel(dossierSchema.shape);
+
 export const chantierSchema = z.object({
   nom: z.string().trim().min(1, "Nom requis").max(COURT),
+  dossierId: z.string().uuid().nullable().optional(),
   proprietaire: z.string().max(COURT).default(""),
   client: z.string().max(COURT).default(""),
   numParcelle: z.string().max(COURT).default(""),

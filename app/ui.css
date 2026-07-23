@@ -1385,3 +1385,18 @@
   .tourcat-nom { flex-basis: 100%; order: -1; }
   .tourcat-actions { margin-left: 0; }
 }
+
+/* ---------- Dossiers de chantiers ---------- */
+.dossier-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+.dossier-badge {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 8px;
+  font-size: 11.5px; font-weight: 700; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px 2px 7px;
+  vertical-align: middle;
+}
+.dossier-list { display: flex; flex-direction: column; gap: 8px; }
+.dossier-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+}
+.dossier-nom { flex: 1; font-weight: 700; }
