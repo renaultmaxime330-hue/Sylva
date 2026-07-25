@@ -139,3 +139,9 @@ export const IcLock = (p: P) => (
 export const IcFolder = (p: P) => (
   <svg {...base(p)}><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8A2 2 0 0 1 21 9.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>
 );
+export const IcExpand = (p: P) => (
+  <svg {...base(p)}><polyline points="8 3 3 3 3 8" /><polyline points="16 3 21 3 21 8" /><polyline points="3 16 3 21 8 21" /><polyline points="21 16 21 21 16 21" /></svg>
+);
+export const IcShrink = (p: P) => (
+  <svg {...base(p)}><polyline points="3 8 8 8 8 3" /><polyline points="21 8 16 8 16 3" /><polyline points="8 21 8 16 3 16" /><polyline points="16 16 16 21 21 21" /></svg>
+);

@@ -637,6 +637,16 @@
 .map-canvas { width: 100%; height: 60vh; min-height: 380px; max-height: 640px; background: var(--surface-2); }
 .map-canvas:focus-within { outline: none; }
 
+/* Plein écran : le conteneur (barre d'outils + carte) passe en overlay
+   fixe au-dessus de tout le reste, la carte prend le reste de la hauteur. */
+.carte-zone.plein-ecran {
+  position: fixed; inset: 0; z-index: 300; background: var(--bg);
+  display: flex; flex-direction: column; gap: 12px; padding: 12px;
+}
+.carte-zone.plein-ecran .map-toolbar { flex: none; }
+.carte-zone.plein-ecran .map-wrap { flex: 1; min-height: 0; }
+.carte-zone.plein-ecran .map-canvas { height: 100%; max-height: none; min-height: 0; }
+
 .draw-panel {
   position: absolute; left: 12px; bottom: 12px; right: 12px; max-width: 360px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
@@ -748,15 +758,17 @@
 }
 .leaflet-tooltip.area-label::before { display: none; }
 
-/* ---------- Coéquipiers en direct (position partagée) ---------- */
+/* ---------- Coéquipiers en direct (position partagée) ----------
+   Pastille petite et précise : un gros disque masque de combien de mètres
+   la position affichée peut s'écarter de la position réelle. */
 .live-badge {
   position: relative; display: flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 3px solid #fff; box-shadow: 0 2px 7px rgba(0, 0, 0, .5);
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
 }
-.live-badge svg { width: 18px; height: 18px; display: block; position: relative; z-index: 1; }
+.live-badge svg { width: 10px; height: 10px; display: block; position: relative; z-index: 1; }
 .live-ring {
-  position: absolute; inset: -3px; border-radius: 50%; border: 3px solid;
+  position: absolute; inset: -2px; border-radius: 50%; border: 2px solid;
   animation: live-pulse 2.2s cubic-bezier(.3, 0, .2, 1) infinite;
 }
 @keyframes live-pulse {

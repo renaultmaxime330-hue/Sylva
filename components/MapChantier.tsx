@@ -22,7 +22,7 @@ import {
 import type { ReactNode } from "react";
 import {
   IcPin, IcTrash, IcCheck, IcRuler, IcDoc, IcBack, IcEdit,
-  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers,
+  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers, IcExpand, IcShrink,
 } from "@/lib/icons";
 
 type LApi = typeof Leaflet;
@@ -71,13 +71,16 @@ function makeBadge(L: LApi, type: GeomType, couleur: string): Leaflet.DivIcon {
 /* ---------- Coéquipiers en direct ---------- */
 const COULEUR_ROLE: Record<Role, string> = { abatteur: "#C0392B", debardeur: "#2E6B41" };
 
+/* Pastille volontairement petite : une position GPS a une précision réelle
+   de quelques mètres — un gros disque masque l'écart entre le point affiché
+   et l'endroit réel, un point fin le laisse deviner plus honnêtement. */
 function makeLiveBadge(L: LApi, couleur: string): Leaflet.DivIcon {
   return L.divIcon({
     className: "geo-badge-wrap",
     html: `<span class="live-badge" style="background:${couleur}"><span class="live-ring" style="border-color:${couleur}"></span></span>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-    tooltipAnchor: [0, -13],
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    tooltipAnchor: [0, -8],
   });
 }
 
@@ -122,6 +125,7 @@ export default function MapChantier({
   const [base, setBase] = useState<BaseId>("plan");
   const [cadastre, setCadastre] = useState(false);
   const [traceFiltre, setTraceFiltre] = useState<"aucun" | "abatteur" | "debardeur" | "tous">("aucun");
+  const [pleinEcran, setPleinEcran] = useState(false);
 
   // Dessin
   const drawTypeRef = useRef<GeomType | null>(null);
@@ -376,6 +380,24 @@ export default function MapChantier({
     else if (map.hasLayer(c)) map.removeLayer(c);
   }, [ready, cadastre]);
 
+  /* Plein écran : le conteneur passe en position fixed (voir CSS), donc la
+     taille réelle du canvas Leaflet change sans que la fenêtre ne se
+     redimensionne — sans invalidateSize() la carte resterait affichée à
+     l'ancienne taille avec des tuiles manquantes sur les bords. Un court
+     délai laisse le temps au layout CSS de se stabiliser avant de mesurer. */
+  useEffect(() => {
+    const t = setTimeout(() => mapRef.current?.invalidateSize(), 80);
+    if (!pleinEcran) return () => clearTimeout(t);
+    document.body.style.overflow = "hidden";
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setPleinEcran(false); }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      clearTimeout(t);
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [pleinEcran]);
+
   /* ---- Dessin ---- */
   function refreshDraft() {
     const L = LRef.current, grp = draftLayerRef.current;
@@ -541,6 +563,7 @@ export default function MapChantier({
 
   return (
     <div className="stack-gap">
+      <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
       <div className="map-toolbar">
         <div className="seg-mini">
           {BASES.map((b) => (
@@ -564,6 +587,11 @@ export default function MapChantier({
           </div>
         )}
         <div style={{ flex: 1 }} />
+        <button className="chip-btn" onClick={() => setPleinEcran((v) => !v)}
+          aria-label={pleinEcran ? "Quitter le plein écran" : "Afficher en plein écran"}
+          title={pleinEcran ? "Quitter le plein écran" : "Plein écran"}>
+          {pleinEcran ? <IcShrink /> : <IcExpand />} {pleinEcran ? "Fermer" : "Plein écran"}
+        </button>
         <div className="export-group">
           {!readOnly && (
             <>
@@ -611,6 +639,7 @@ export default function MapChantier({
 
       <div className="map-wrap">
         <div ref={containerRef} className="map-canvas" />
+      </div>
       </div>
 
       {msg && <div className="banner fade-in"><IcCheck /> {msg}</div>}
