@@ -11,7 +11,7 @@ import {
   ajouterGeometrie, supprimerGeometrie, renommerGeometrie, surfaceHa, longueurM,
 } from "@/lib/geometries";
 import { useGeometries } from "@/lib/queries/geometries";
-import { modifierChantier, obtenirPosition } from "@/lib/chantiers";
+import { modifierChantier } from "@/lib/chantiers";
 import { formatLongueur } from "@/lib/format";
 import { roleLabel, type Role } from "@/lib/profil";
 import { depuis, type Coequipier, type MoiPresence } from "@/lib/presence";
@@ -126,6 +126,8 @@ export default function MapChantier({
   const [cadastre, setCadastre] = useState(false);
   const [traceFiltre, setTraceFiltre] = useState<"aucun" | "abatteur" | "debardeur" | "tous">("aucun");
   const [pleinEcran, setPleinEcran] = useState(false);
+  const [suivre, setSuivre] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
 
   // Dessin
   const drawTypeRef = useRef<GeomType | null>(null);
@@ -389,11 +391,13 @@ export default function MapChantier({
     const t = setTimeout(() => mapRef.current?.invalidateSize(), 80);
     if (!pleinEcran) return () => clearTimeout(t);
     document.body.style.overflow = "hidden";
+    document.body.classList.add("carte-plein-ecran");
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setPleinEcran(false); }
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(t);
       document.body.style.overflow = "";
+      document.body.classList.remove("carte-plein-ecran");
       window.removeEventListener("keydown", onKey);
     };
   }, [pleinEcran]);
@@ -507,19 +511,46 @@ export default function MapChantier({
     if (all.length) map.fitBounds(L.latLngBounds(all.map(toLatLng)), { padding: [40, 40], maxZoom: 16 });
   }
 
-  async function maPosition() {
-    try {
-      const { lat, lng } = await obtenirPosition();
-      const L = LRef.current, map = mapRef.current;
-      if (!L || !map) return;
-      const role = monRole ?? "abatteur";
-      map.setView([lat, lng], 15);
-      posMarkerRef.current?.remove();
-      posMarkerRef.current = L.marker([lat, lng], { icon: makeLiveBadge(L, COULEUR_ROLE[role]), zIndexOffset: 1000 }).addTo(map);
-    } catch (e) {
-      alert("Position indisponible : " + (e instanceof Error ? e.message : ""));
+  /* Un premier clic centre une fois puis suit en continu (la carte se
+     recale sur chaque nouvelle position GPS) ; reclic = on arrête de
+     suivre, libre de déplacer/zoomer la carte sans qu'elle ne revienne. */
+  function basculerSuivi() {
+    if (suivre) {
+      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+      setSuivre(false);
+      return;
     }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      alert("La géolocalisation n'est pas disponible sur cet appareil.");
+      return;
+    }
+    const role = monRole ?? "abatteur";
+    let premiere = true;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const L = LRef.current, map = mapRef.current;
+        if (!L || !map) return;
+        if (premiere) { map.setView([lat, lng], 15); premiere = false; }
+        else map.panTo([lat, lng]);
+        posMarkerRef.current?.remove();
+        posMarkerRef.current = L.marker([lat, lng], { icon: makeLiveBadge(L, COULEUR_ROLE[role]), zIndexOffset: 1000 }).addTo(map);
+      },
+      (e) => {
+        alert("Position indisponible : " + e.message);
+        setSuivre(false);
+        watchIdRef.current = null;
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+    setSuivre(true);
   }
+
+  // Coupe le suivi GPS si le composant se démonte pendant qu'il tourne.
+  useEffect(() => () => {
+    if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+  }, []);
 
   function centrerEquipe() {
     const L = LRef.current, map = mapRef.current;
@@ -571,7 +602,10 @@ export default function MapChantier({
           ))}
         </div>
         <button className="chip-btn" data-on={cadastre} onClick={() => setCadastre((v) => !v)}>Cadastre</button>
-        <button className="chip-btn" onClick={maPosition}><IcPin /> Ma position</button>
+        <button className="chip-btn" data-on={suivre} onClick={basculerSuivi}
+          title={suivre ? "Suivi en cours — reclique pour te déplacer librement" : "Centrer et suivre ta position en continu"}>
+          <IcPin /> {suivre ? "Suivi…" : "Suivre ma position"}
+        </button>
         <button className="chip-btn" onClick={centrerToutes}>Recentrer</button>
         {equipeLocalisee.length > 0 && (
           <button className="chip-btn" onClick={centrerEquipe}>
