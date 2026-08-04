@@ -21,8 +21,8 @@ async function fetchFinance(id: string): Promise<Finance | null> {
   return (await r.json()).finance;
 }
 
-export function useFinances(): UseQueryResult<Finance[]> {
-  return useQuery({ queryKey: ["finances"], queryFn: fetchFinances });
+export function useFinances(enabled = true): UseQueryResult<Finance[]> {
+  return useQuery({ queryKey: ["finances"], queryFn: fetchFinances, enabled });
 }
 export function useFinance(id: string): UseQueryResult<Finance | null> {
   return useQuery({ queryKey: ["finances", id], queryFn: () => fetchFinance(id), enabled: !!id });

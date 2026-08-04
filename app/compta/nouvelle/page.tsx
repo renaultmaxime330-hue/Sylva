@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import FinanceForm from "@/components/FinanceForm";
 import { IcBack } from "@/lib/icons";
 
 export default function NouvelleEcriture() {
+  const searchParams = useSearchParams();
+  const chantierId = searchParams.get("c") ?? undefined;
   return (
     <div className="stack-gap">
       <div className="page-head">
@@ -13,7 +18,7 @@ export default function NouvelleEcriture() {
         </div>
       </div>
       <div className="card pad" style={{ maxWidth: 780 }}>
-        <FinanceForm />
+        <FinanceForm chantierId={chantierId} />
       </div>
     </div>
   );

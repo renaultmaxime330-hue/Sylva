@@ -145,7 +145,7 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
             <ThemeButton />
           </div>
           <div className="muted" style={{ fontSize: 12, padding: "8px 12px" }}>
-            {online ? "En ligne" : "Hors-ligne — connexion nécessaire"}
+            {online ? "En ligne" : "Hors-ligne — dernières données, lecture seule"}
           </div>
         </div>
       </aside>
@@ -159,7 +159,7 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
             <span className="name">Syl<b>va</b></span>
           </div>
           {!online && (
-            <span className="pill sm doing" title="Mode hors-ligne">
+            <span className="pill sm doing" title="Hors-ligne — dernières données, lecture seule">
               <IcWifiOff /> Hors-ligne
             </span>
           )}
@@ -221,7 +221,7 @@ function ShellAuthentifie({ children }: { children: ReactNode }) {
             </div>
             <div className="menu-sheet-foot">
               <span className="muted" style={{ fontSize: 12.5 }}>
-                {online ? "En ligne" : "Hors-ligne — connexion nécessaire"}
+                {online ? "En ligne" : "Hors-ligne — dernières données, lecture seule"}
               </span>
               <ThemeButton />
             </div>

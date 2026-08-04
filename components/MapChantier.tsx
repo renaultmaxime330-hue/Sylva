@@ -596,6 +596,11 @@ export default function MapChantier({
     <div className="stack-gap">
       <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
       <div className="map-toolbar">
+        {pleinEcran && (
+          <button className="chip-btn" data-on onClick={() => setPleinEcran(false)} aria-label="Quitter le plein écran" title="Quitter le plein écran">
+            <IcShrink /> Fermer
+          </button>
+        )}
         <div className="seg-mini">
           {BASES.map((b) => (
             <button key={b.id} data-on={base === b.id} onClick={() => setBase(b.id)}>{b.label}</button>
@@ -620,12 +625,11 @@ export default function MapChantier({
             <button data-on={traceFiltre === "tous"} onClick={() => setTraceFiltre("tous")}>Les deux</button>
           </div>
         )}
-        <div style={{ flex: 1 }} />
-        <button className="chip-btn" onClick={() => setPleinEcran((v) => !v)}
-          aria-label={pleinEcran ? "Quitter le plein écran" : "Afficher en plein écran"}
-          title={pleinEcran ? "Quitter le plein écran" : "Plein écran"}>
-          {pleinEcran ? <IcShrink /> : <IcExpand />} {pleinEcran ? "Fermer" : "Plein écran"}
-        </button>
+        {!pleinEcran && (
+          <button className="chip-btn" onClick={() => setPleinEcran(true)} aria-label="Afficher en plein écran" title="Plein écran">
+            <IcExpand /> Plein écran
+          </button>
+        )}
         <div className="export-group">
           {!readOnly && (
             <>
@@ -674,22 +678,8 @@ export default function MapChantier({
       <div className="map-wrap">
         <div ref={containerRef} className="map-canvas" />
       </div>
-      </div>
 
       {msg && <div className="banner fade-in"><IcCheck /> {msg}</div>}
-
-      {readOnly && (
-        <div className="ro-edit">
-          <span className="muted">
-            {geoms.length > 0
-              ? `${geoms.length} tracé${geoms.length > 1 ? "s" : ""} sur ce chantier. Les modifications se font dans l'outil Carte.`
-              : "Aucun tracé pour l'instant."}
-          </span>
-          {editHref && (
-            <Link href={editHref} className="btn primary big"><IcEdit /> Modifier sur la carte</Link>
-          )}
-        </div>
-      )}
 
       {!readOnly && !drawType && (
         <div className="draw-actions">
@@ -707,6 +697,20 @@ export default function MapChantier({
               );
             })}
           </div>
+        </div>
+      )}
+      </div>
+
+      {readOnly && (
+        <div className="ro-edit">
+          <span className="muted">
+            {geoms.length > 0
+              ? `${geoms.length} tracé${geoms.length > 1 ? "s" : ""} sur ce chantier. Les modifications se font dans l'outil Carte.`
+              : "Aucun tracé pour l'instant."}
+          </span>
+          {editHref && (
+            <Link href={editHref} className="btn primary big"><IcEdit /> Modifier sur la carte</Link>
+          )}
         </div>
       )}
 

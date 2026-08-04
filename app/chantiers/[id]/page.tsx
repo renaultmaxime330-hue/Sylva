@@ -7,19 +7,24 @@ import { totalVolume, type Chantier } from "@/lib/db";
 import { supprimerChantier, marquerTermine } from "@/lib/chantiers";
 import { useChantier } from "@/lib/queries/chantiers";
 import { useDossiers } from "@/lib/queries/dossiers";
+import { useFinances } from "@/lib/queries/finances";
+import { useMonEquipe } from "@/lib/queries/equipe";
+import { bilan, supprimerFinance } from "@/lib/finances";
 import StatutPill from "@/components/StatutPill";
 import VolumesChantier from "@/components/VolumesChantier";
 import MapChantier from "@/components/MapChantier";
 import { formatDate, formatSurface, formatGPS } from "@/lib/format";
-import { IcBack, IcEdit, IcTrash, IcChart, IcCheck, IcClock } from "@/lib/icons";
+import { IcBack, IcEdit, IcTrash, IcChart, IcCheck, IcClock, IcEuro, IcPlus } from "@/lib/icons";
 
-type Tab = "infos" | "carte" | "volumes";
+type Tab = "infos" | "carte" | "volumes" | "finances";
 
 export default function FicheChantier() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("infos");
+  const { data: equipe } = useMonEquipe();
+  const estChef = equipe?.monChefEntreprise ?? false;
 
   const { data: chantier } = useChantier(id);
 
@@ -77,11 +82,13 @@ export default function FicheChantier() {
         <button className={tab === "infos" ? "on" : ""} onClick={() => setTab("infos")}>Infos</button>
         <button className={tab === "carte" ? "on" : ""} onClick={() => setTab("carte")}>Carte</button>
         <button className={tab === "volumes" ? "on" : ""} onClick={() => setTab("volumes")}>Volumes</button>
+        {estChef && <button className={tab === "finances" ? "on" : ""} onClick={() => setTab("finances")}>Finances</button>}
       </div>
 
       {tab === "infos" && <OngletInfos chantier={chantier} />}
       {tab === "carte" && <MapChantier chantier={chantier} readOnly editHref={`/carte?c=${id}`} />}
       {tab === "volumes" && <OngletVolumes chantier={chantier} />}
+      {tab === "finances" && estChef && <OngletFinances chantier={chantier} />}
     </div>
   );
 }
@@ -139,4 +146,59 @@ function OngletVolumes({ chantier }: { chantier: Chantier }) {
     );
   }
   return <VolumesChantier chantier={chantier} />;
+}
+
+/* ---------- Onglet Finances (rentabilité, chef d'entreprise uniquement) ---------- */
+const eur = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €";
+
+function OngletFinances({ chantier }: { chantier: Chantier }) {
+  const { data: finances } = useFinances();
+  if (!finances) return <div className="muted" style={{ padding: 20 }}>Chargement…</div>;
+
+  const lignes = finances.filter((f) => f.chantierId === chantier.id);
+  const b = bilan(lignes);
+
+  return (
+    <div className="stack-gap">
+      <div className="stats">
+        <div className="stat"><div className="k" style={{ color: "var(--st-done)" }}>Recettes</div><div className="v" style={{ color: "var(--st-done)" }}>{eur(b.recettes)}</div></div>
+        <div className="stat"><div className="k" style={{ color: "var(--danger)" }}>Dépenses</div><div className="v" style={{ color: "var(--danger)" }}>{eur(b.depenses)}</div></div>
+        <div className="stat"><div className="k"><IcEuro /> Marge</div><div className="v" style={{ color: b.marge >= 0 ? "var(--accent-strong)" : "var(--danger)" }}>{eur(b.marge)}</div></div>
+        <div className="stat"><div className="k">Rentabilité</div><div className="v">{b.rentabilite != null ? b.rentabilite.toLocaleString("fr-FR", { maximumFractionDigits: 1 }) : "—"}<small>%</small></div></div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Link href={`/compta/nouvelle?c=${chantier.id}`} className="btn primary"><IcPlus /> Nouvelle écriture</Link>
+      </div>
+
+      {lignes.length === 0 ? (
+        <div className="card pad empty">
+          <div className="ic"><IcEuro /></div>
+          <h3>Aucune écriture sur ce chantier</h3>
+          <p>Ajoute les recettes (ventes de bois…) et dépenses rattachées à ce chantier pour suivre sa rentabilité.</p>
+        </div>
+      ) : (
+        <div className="list">
+          {lignes.map((f) => (
+            <div className="jrow" key={f.id}>
+              <div className="fin-amt" style={{ color: f.type === "recette" ? "var(--st-done)" : "var(--danger)" }}>
+                {f.type === "recette" ? "+" : "−"}{eur(f.montant)}
+              </div>
+              <div className="jbody">
+                <div className="t">{f.libelle || f.categorie || (f.type === "recette" ? "Recette" : "Dépense")}</div>
+                <div className="m muted">
+                  {f.categorie && <span>{f.categorie}</span>}
+                  <span>{formatDate(f.date)}</span>
+                </div>
+              </div>
+              <div className="jactions">
+                <Link href={`/compta/${f.id}/modifier`} className="iconbtn" aria-label="Modifier"><IcEdit /></Link>
+                <button className="iconbtn" aria-label="Supprimer" onClick={() => { if (confirm("Supprimer cette écriture ?")) supprimerFinance(f.id); }}><IcTrash /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

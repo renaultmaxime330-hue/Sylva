@@ -7,14 +7,14 @@ import { useChantiers } from "@/lib/queries/chantiers";
 import { creerFinance, modifierFinance, champsVidesFinance, CAT_RECETTES, CAT_DEPENSES, type FinanceInput } from "@/lib/finances";
 import { IcCheck, IcBack } from "@/lib/icons";
 
-export default function FinanceForm({ initial }: { initial?: Finance }) {
+export default function FinanceForm({ initial, chantierId }: { initial?: Finance; chantierId?: string }) {
   const router = useRouter();
   const editing = !!initial;
   const { data: chantiers } = useChantiers();
   const [f, setF] = useState<FinanceInput>(
     initial
       ? { chantierId: initial.chantierId, type: initial.type, categorie: initial.categorie, libelle: initial.libelle, montant: initial.montant, date: initial.date }
-      : champsVidesFinance()
+      : champsVidesFinance(chantierId)
   );
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof FinanceInput>(k: K, v: FinanceInput[K]) => setF((p) => ({ ...p, [k]: v }));
