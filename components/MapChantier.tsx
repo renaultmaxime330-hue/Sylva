@@ -206,12 +206,13 @@ export default function MapChantier({
           void finishPoint(dt);
           return;
         }
-        // Fermer le polygone si on reclique sur le premier sommet
+        // Fermer le polygone si on reclique près du premier sommet — rayon
+        // généreux (le doigt couvre bien plus qu'un clic de souris précis).
         const pts = pointsRef.current;
         if (info.geom === "Polygon" && pts.length >= 3) {
           const first = map.latLngToContainerPoint([pts[0][1], pts[0][0]]);
           const here = map.latLngToContainerPoint(e.latlng);
-          if (first.distanceTo(here) < 20) {
+          if (first.distanceTo(here) < 32) {
             void finishDraw();
             return;
           }
@@ -390,12 +391,17 @@ export default function MapChantier({
   useEffect(() => {
     const t = setTimeout(() => mapRef.current?.invalidateSize(), 80);
     if (!pleinEcran) return () => clearTimeout(t);
+    // iOS Safari : bloquer le scroll uniquement sur <body> ne suffit pas
+    // toujours (le viewport visuel peut quand même « rebondir ») — verrouille
+    // aussi <html>, ceinture et bretelles.
+    document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     document.body.classList.add("carte-plein-ecran");
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setPleinEcran(false); }
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(t);
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.body.classList.remove("carte-plein-ecran");
       window.removeEventListener("keydown", onKey);
@@ -423,8 +429,8 @@ export default function MapChantier({
     latlngs.forEach((ll, i) => {
       const closeTarget = isPoly && pts.length >= 3 && i === 0;
       L.circleMarker(ll, closeTarget
-        ? { radius: 10, color: col, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }
-        : { radius: 5, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
+        ? { radius: 13, color: col, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }
+        : { radius: 7, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
       ).addTo(grp);
     });
     setNbPoints(pts.length);
@@ -596,11 +602,12 @@ export default function MapChantier({
     <div className="stack-gap">
       <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
       <div className="map-toolbar">
-        {pleinEcran && (
-          <button className="chip-btn" data-on onClick={() => setPleinEcran(false)} aria-label="Quitter le plein écran" title="Quitter le plein écran">
-            <IcShrink /> Fermer
-          </button>
-        )}
+        <button className="chip-btn" data-on={pleinEcran || undefined}
+          onClick={() => setPleinEcran((v) => !v)}
+          aria-label={pleinEcran ? "Quitter le plein écran" : "Afficher en plein écran"}
+          title={pleinEcran ? "Quitter le plein écran" : "Plein écran"}>
+          {pleinEcran ? <IcShrink /> : <IcExpand />} {pleinEcran ? "Fermer" : "Plein écran"}
+        </button>
         <div className="seg-mini">
           {BASES.map((b) => (
             <button key={b.id} data-on={base === b.id} onClick={() => setBase(b.id)}>{b.label}</button>
@@ -624,11 +631,6 @@ export default function MapChantier({
             <button data-on={traceFiltre === "debardeur"} onClick={() => setTraceFiltre("debardeur")}>Débardeur</button>
             <button data-on={traceFiltre === "tous"} onClick={() => setTraceFiltre("tous")}>Les deux</button>
           </div>
-        )}
-        {!pleinEcran && (
-          <button className="chip-btn" onClick={() => setPleinEcran(true)} aria-label="Afficher en plein écran" title="Plein écran">
-            <IcExpand /> Plein écran
-          </button>
         )}
         <div className="export-group">
           {!readOnly && (

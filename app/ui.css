@@ -666,7 +666,7 @@ body.carte-plein-ecran .content {
 .carte-zone.plein-ecran .map-toolbar {
   flex: none; margin: 0; padding: 8px 10px; border-radius: var(--r-lg);
   background: var(--surface); box-shadow: var(--shadow);
-  max-height: 38vh; overflow-y: auto;
+  max-height: 38vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .carte-zone.plein-ecran .draw-status,
 .carte-zone.plein-ecran .draw-actions,
