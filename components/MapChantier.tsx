@@ -112,6 +112,7 @@ export default function MapChantier({
   monNom?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const zoneRef = useRef<HTMLDivElement>(null);
   const LRef = useRef<LApi | null>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
   const baseRef = useRef<Record<BaseId, Leaflet.TileLayer> | null>(null);
@@ -169,6 +170,11 @@ export default function MapChantier({
         center: hasPos ? [chantier.lat!, chantier.lng!] : [44.2, -0.77],
         zoom: hasPos ? 14 : 7,
         zoomControl: true,
+        // Tolérance de tap généreuse : sur une tablette (écran large, plus de
+        // dérive entre le point d'appui et de relâchement du doigt), le
+        // réglage par défaut peut faire prendre un tap précis pour un début
+        // de glissé et avaler le point posé.
+        tapTolerance: 25,
       });
       mapRef.current = map;
 
@@ -206,17 +212,11 @@ export default function MapChantier({
           void finishPoint(dt);
           return;
         }
-        // Fermer le polygone si on reclique près du premier sommet — rayon
-        // généreux (le doigt couvre bien plus qu'un clic de souris précis).
+        // Pas de fermeture automatique en retapant près du 1er sommet : au
+        // doigt, un tap approximatif fermait le polygone plus tôt que prévu
+        // et donnait l'impression d'une limite de points. On ferme
+        // uniquement via le bouton « Terminer », explicite.
         const pts = pointsRef.current;
-        if (info.geom === "Polygon" && pts.length >= 3) {
-          const first = map.latLngToContainerPoint([pts[0][1], pts[0][0]]);
-          const here = map.latLngToContainerPoint(e.latlng);
-          if (first.distanceTo(here) < 32) {
-            void finishDraw();
-            return;
-          }
-        }
         pointsRef.current = [...pts, p];
         refreshDraft();
       });
@@ -407,6 +407,34 @@ export default function MapChantier({
       window.removeEventListener("keydown", onKey);
     };
   }, [pleinEcran]);
+
+  /* La mise en page CSS (position fixed) ne masque jamais la barre
+     d'adresse/les boutons système du navigateur — seule l'API Fullscreen
+     native le peut. On la tente en priorité (Android/Chrome/Samsung
+     Internet la supportent bien) et on retombe sur le plein écran
+     "logiciel" CSS seul si elle est indisponible ou refuse (iOS Safari
+     notamment, qui ne supporte pas requestFullscreen sur un élément
+     quelconque). fullscreenchange resynchronise l'état si l'utilisateur
+     quitte via le geste/bouton système plutôt que notre bouton Fermer. */
+  useEffect(() => {
+    function onFsChange() {
+      if (!document.fullscreenElement) setPleinEcran(false);
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  function basculerPleinEcran() {
+    if (!pleinEcran) {
+      const el = zoneRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }) | null;
+      void (el?.requestFullscreen?.() ?? el?.webkitRequestFullscreen?.())?.catch(() => {});
+      setPleinEcran(true);
+    } else {
+      const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
+      if (document.fullscreenElement) void (doc.exitFullscreen?.() ?? doc.webkitExitFullscreen?.())?.catch(() => {});
+      setPleinEcran(false);
+    }
+  }
 
   /* ---- Dessin ---- */
   function refreshDraft() {
@@ -600,10 +628,10 @@ export default function MapChantier({
 
   return (
     <div className="stack-gap">
-      <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
+      <div ref={zoneRef} className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
       <div className="map-toolbar">
         <button className="chip-btn" data-on={pleinEcran || undefined}
-          onClick={() => setPleinEcran((v) => !v)}
+          onClick={basculerPleinEcran}
           aria-label={pleinEcran ? "Quitter le plein écran" : "Afficher en plein écran"}
           title={pleinEcran ? "Quitter le plein écran" : "Plein écran"}>
           {pleinEcran ? <IcShrink /> : <IcExpand />} {pleinEcran ? "Fermer" : "Plein écran"}
@@ -656,7 +684,7 @@ export default function MapChantier({
               {drawInfo.geom === "Polygon"
                 ? (nbPoints < 3
                     ? `Touche la carte pour poser les coins de la parcelle (${nbPoints}/3 minimum).`
-                    : "Reclique sur le 1er point (blanc) pour fermer, ou « Terminer ».")
+                    : `Continue à poser des points (${nbPoints}), puis appuie sur « Terminer » pour fermer la parcelle.`)
                 : drawInfo.geom === "LineString"
                 ? `Touche la carte pour tracer le chemin (${nbPoints} point${nbPoints > 1 ? "s" : ""}).`
                 : "Touche la carte à l'endroit voulu."}
