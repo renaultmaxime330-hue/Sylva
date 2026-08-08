@@ -456,9 +456,14 @@ export default function MapChantier({
     }
     latlngs.forEach((ll, i) => {
       const closeTarget = isPoly && pts.length >= 3 && i === 0;
+      // Gros points très contrastés : un point sombre à liseré fin peut se
+      // fondre dans un fond de carte chargé (forêt, en plein soleil sur une
+      // tablette dehors) — double contour noir + blanc, lisible sur n'importe
+      // quel fond clair ou sombre.
+      L.circleMarker(ll, { radius: closeTarget ? 17 : 11, color: "#000", weight: 1, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(grp);
       L.circleMarker(ll, closeTarget
-        ? { radius: 13, color: col, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }
-        : { radius: 7, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
+        ? { radius: 14, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
+        : { radius: 8, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
       ).addTo(grp);
     });
     setNbPoints(pts.length);
