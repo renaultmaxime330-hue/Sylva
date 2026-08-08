@@ -84,6 +84,22 @@ function makeLiveBadge(L: LApi, couleur: string): Leaflet.DivIcon {
   });
 }
 
+/* ---------- Sommets en cours de dessin ----------
+   En HTML (divIcon), pas en cercle vecteur (circleMarker) : sur certains
+   navigateurs/appareils le calque SVG des tracés vecteur peut ne pas se
+   repeindre après un ajout dynamique (observé : la surface se calcule bien
+   mais rien n'apparaît à l'écran) — un marqueur HTML classique n'a pas ce
+   risque, il est positionné comme n'importe quel élément de page. */
+function makeVertexIcon(L: LApi, couleur: string, gros: boolean): Leaflet.DivIcon {
+  const taille = gros ? 26 : 18;
+  return L.divIcon({
+    className: "geo-badge-wrap",
+    html: `<span class="vertex-pt${gros ? " gros" : ""}" style="--vc:${couleur}"></span>`,
+    iconSize: [taille, taille],
+    iconAnchor: [taille / 2, taille / 2],
+  });
+}
+
 /* ---------- Fonds de carte (IGN Géoplateforme + OSM) ---------- */
 const ignWmts = (layer: string, format = "image/png") =>
   `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}` +
@@ -175,6 +191,10 @@ export default function MapChantier({
         // réglage par défaut peut faire prendre un tap précis pour un début
         // de glissé et avaler le point posé.
         tapTolerance: 25,
+        // Renderer vecteur explicite (plutôt que la détection automatique
+        // SVG/Canvas de Leaflet) — supprime toute ambiguïté sur le calque
+        // utilisé pour les tracés (parcelles, pistes…) d'un appareil à l'autre.
+        renderer: L.svg(),
       });
       mapRef.current = map;
 
@@ -456,15 +476,7 @@ export default function MapChantier({
     }
     latlngs.forEach((ll, i) => {
       const closeTarget = isPoly && pts.length >= 3 && i === 0;
-      // Gros points très contrastés : un point sombre à liseré fin peut se
-      // fondre dans un fond de carte chargé (forêt, en plein soleil sur une
-      // tablette dehors) — double contour noir + blanc, lisible sur n'importe
-      // quel fond clair ou sombre.
-      L.circleMarker(ll, { radius: closeTarget ? 17 : 11, color: "#000", weight: 1, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(grp);
-      L.circleMarker(ll, closeTarget
-        ? { radius: 14, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
-        : { radius: 8, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1, interactive: false }
-      ).addTo(grp);
+      L.marker(ll, { icon: makeVertexIcon(L, col, closeTarget), interactive: false, zIndexOffset: 2000 }).addTo(grp);
     });
     setNbPoints(pts.length);
   }
