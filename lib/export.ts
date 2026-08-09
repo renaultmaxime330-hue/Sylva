@@ -1,4 +1,4 @@
-import type { Chantier, Geometrie, GeoJSONGeometry } from "./db";
+import type { Chantier, Geometrie, GeoJSONGeometry, GeomType } from "./db";
 
 /* Export des géométries d'un chantier vers les formats SIG courants. */
 
@@ -104,17 +104,41 @@ ${placemarks.join("\n")}
 }
 
 /* ---------- Import GeoJSON (parcelles / points) ---------- */
-export function parseGeoJSONGeometries(text: string): GeoJSONGeometry[] {
+export interface GeometrieImportee {
+  geometry: GeoJSONGeometry;
+  type?: GeomType;
+  nom?: string;
+  couleur?: string;
+}
+
+const TYPES_VALIDES = new Set<GeomType>(["parcelle", "point", "piste", "chemin", "zone_danger", "place_depot"]);
+
+/* toGeoJSON() écrit le type/nom/couleur d'origine dans `properties` (voir
+   plus haut) — on les relit ici pour qu'un fichier réimporté (ou partagé
+   entre deux chantiers) retrouve sa vraie nature : une place de dépôt reste
+   une place de dépôt, pas un point d'intérêt générique. Sans `properties`
+   reconnues (fichier venant d'un autre outil SIG), l'appelant retombe sur
+   une déduction par forme de géométrie. */
+export function parseGeoJSONGeometries(text: string): GeometrieImportee[] {
   const data = JSON.parse(text);
-  const out: GeoJSONGeometry[] = [];
-  const push = (geom: unknown) => {
+  const out: GeometrieImportee[] = [];
+  const push = (geom: unknown, props?: Record<string, unknown>) => {
     if (geom && typeof geom === "object" && "type" in geom) {
       const t = (geom as { type: string }).type;
-      if (t === "Point" || t === "LineString" || t === "Polygon") out.push(geom as GeoJSONGeometry);
+      if (t === "Point" || t === "LineString" || t === "Polygon") {
+        const typeProp = props?.type;
+        out.push({
+          geometry: geom as GeoJSONGeometry,
+          type: typeof typeProp === "string" && TYPES_VALIDES.has(typeProp as GeomType) ? (typeProp as GeomType) : undefined,
+          nom: typeof props?.nom === "string" && props.nom ? props.nom : undefined,
+          couleur: typeof props?.couleur === "string" ? props.couleur : undefined,
+        });
+      }
     }
   };
-  if (data.type === "FeatureCollection") data.features?.forEach((f: { geometry: unknown }) => push(f.geometry));
-  else if (data.type === "Feature") push(data.geometry);
+  if (data.type === "FeatureCollection") {
+    data.features?.forEach((f: { geometry: unknown; properties?: Record<string, unknown> }) => push(f.geometry, f.properties));
+  } else if (data.type === "Feature") push(data.geometry, data.properties);
   else push(data);
   return out;
 }

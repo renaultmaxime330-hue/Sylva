@@ -612,8 +612,12 @@ export default function MapChantier({
     try {
       const parsed = parseGeoJSONGeometries(await file.text());
       for (const g of parsed) {
-        const t: GeomType = g.type === "Point" ? "point" : g.type === "LineString" ? "piste" : "parcelle";
-        await ajouterGeometrie(chantier.id, t, g, "Importé");
+        // Le type d'origine (place de dépôt, chemin, zone dangereuse…) est
+        // préservé par parseGeoJSONGeometries quand le fichier vient de
+        // Sylva ; on ne retombe sur une déduction par forme que pour un
+        // fichier SIG externe qui n'a pas cette information.
+        const t: GeomType = g.type ?? (g.geometry.type === "Point" ? "point" : g.geometry.type === "LineString" ? "piste" : "parcelle");
+        await ajouterGeometrie(chantier.id, t, g.geometry, g.nom ?? "Importé", g.couleur);
       }
       if (parsed.length === 0) alert("Aucune géométrie trouvée dans ce fichier GeoJSON.");
       else setTimeout(centrerToutes, 300);
