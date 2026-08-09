@@ -85,7 +85,7 @@ export type GeomType =
 export const GEOM_TYPES: {
   value: GeomType; label: string; couleur: string; geom: "Polygon" | "LineString" | "Point";
 }[] = [
-  { value: "parcelle", label: "Parcelle", couleur: "#2E6B41", geom: "Polygon" },
+  { value: "parcelle", label: "Parcelle", couleur: "#FFC107", geom: "Polygon" },
   { value: "zone_danger", label: "Zone dangereuse", couleur: "#C0392B", geom: "Polygon" },
   { value: "place_depot", label: "Place de dépôt", couleur: "#A75F24", geom: "Point" },
   { value: "point", label: "Point d'intérêt", couleur: "#2563EB", geom: "Point" },
