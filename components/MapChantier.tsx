@@ -128,7 +128,6 @@ export default function MapChantier({
   monNom?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const zoneRef = useRef<HTMLDivElement>(null);
   const LRef = useRef<LApi | null>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
   const baseRef = useRef<Record<BaseId, Leaflet.TileLayer> | null>(null);
@@ -428,32 +427,16 @@ export default function MapChantier({
     };
   }, [pleinEcran]);
 
-  /* La mise en page CSS (position fixed) ne masque jamais la barre
-     d'adresse/les boutons système du navigateur — seule l'API Fullscreen
-     native le peut. On la tente en priorité (Android/Chrome/Samsung
-     Internet la supportent bien) et on retombe sur le plein écran
-     "logiciel" CSS seul si elle est indisponible ou refuse (iOS Safari
-     notamment, qui ne supporte pas requestFullscreen sur un élément
-     quelconque). fullscreenchange resynchronise l'état si l'utilisateur
-     quitte via le geste/bouton système plutôt que notre bouton Fermer. */
-  useEffect(() => {
-    function onFsChange() {
-      if (!document.fullscreenElement) setPleinEcran(false);
-    }
-    document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
-  }, []);
-
+  /* L'API Fullscreen native masque bien la barre d'adresse, mais sur Android
+     elle impose ensuite un geste système (glisser depuis le haut + bouton
+     Retour) pour en sortir — notre propre bouton « Fermer » n'a alors plus
+     la main, ce qui déroute plus qu'autre chose sur un outil de travail.
+     Plein écran "logiciel" (CSS, position fixed) uniquement : moins radical
+     (la barre du navigateur reste visible) mais entièrement sous notre
+     contrôle — on entre et on sort toujours proprement via nos propres
+     boutons, sans dépendre d'un geste OS. */
   function basculerPleinEcran() {
-    if (!pleinEcran) {
-      const el = zoneRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }) | null;
-      void (el?.requestFullscreen?.() ?? el?.webkitRequestFullscreen?.())?.catch(() => {});
-      setPleinEcran(true);
-    } else {
-      const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
-      if (document.fullscreenElement) void (doc.exitFullscreen?.() ?? doc.webkitExitFullscreen?.())?.catch(() => {});
-      setPleinEcran(false);
-    }
+    setPleinEcran((v) => !v);
   }
 
   /* ---- Dessin ---- */
@@ -465,7 +448,7 @@ export default function MapChantier({
     const dt = drawTypeRef.current;
     const isPoly = dt ? geomTypeInfo(dt).geom === "Polygon" : false;
     const col = dt ? geomTypeInfo(dt).couleur : "#2E6B41";
-    const fillOp = dt === "zone_danger" ? 0.28 : 0.18;
+    const fillOp = dt === "zone_danger" ? 0.5 : 0.4;
     const latlngs = pts.map(toLatLng);
     if (pts.length >= 2) L.polyline(latlngs, { color: col, weight: 3.5, dashArray: "6,5", lineCap: "round", interactive: false }).addTo(grp);
     if (isPoly && pts.length >= 3) {
@@ -645,7 +628,7 @@ export default function MapChantier({
 
   return (
     <div className="stack-gap">
-      <div ref={zoneRef} className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
+      <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
       <div className="map-toolbar">
         <button className="chip-btn" data-on={pleinEcran || undefined}
           onClick={basculerPleinEcran}
