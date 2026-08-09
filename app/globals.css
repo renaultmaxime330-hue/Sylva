@@ -145,6 +145,16 @@
    basse : toute règle `.xxx svg { width: … }` plus bas la remplace normalement. */
 svg { width: 1.15em; height: 1.15em; flex: none; }
 
+/* …sauf le SVG de rendu vectoriel de Leaflet (enfant direct d'un calque de
+   carte) : c'est lui qui porte TOUS les tracés — parcelles, pistes, chemins,
+   cercles. Leaflet le dimensionne lui-même via ses attributs width/height ;
+   le filet ci-dessus l'écrasait à 1.15em, réduisant chaque tracé à ~14 px
+   hors du cadre visible — les tracés semblaient tout simplement absents,
+   alors que leurs étiquettes (HTML, autre calque) s'affichaient normalement.
+   Le sélecteur enfant direct épargne les icônes des marqueurs, imbriquées
+   plus profond (.geo-badge svg, .live-badge svg…), qui gardent leur taille. */
+.leaflet-pane > svg { width: auto; height: auto; flex: initial; }
+
 html { height: 100%; color-scheme: light dark; }
 html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
