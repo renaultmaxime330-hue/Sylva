@@ -145,3 +145,6 @@ export const IcExpand = (p: P) => (
 export const IcShrink = (p: P) => (
   <svg {...base(p)}><polyline points="3 8 8 8 8 3" /><polyline points="21 8 16 8 16 3" /><polyline points="8 21 8 16 3 16" /><polyline points="16 16 16 21 21 21" /></svg>
 );
+export const IcClose = (p: P) => (
+  <svg {...base(p)}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+);

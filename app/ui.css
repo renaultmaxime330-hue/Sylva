@@ -674,6 +674,21 @@ body.carte-plein-ecran .content {
 .carte-zone.plein-ecran .map-wrap { flex: 1; min-height: 0; }
 .carte-zone.plein-ecran .map-canvas { width: 100%; height: 100%; max-height: none; min-height: 0; }
 
+/* Toujours au même endroit (coin haut-droit), toujours au-dessus de tout
+   (la carte, la barre d'outils même quand elle défile) — une sortie fiable
+   en un seul geste, sans avoir à repérer le bon bouton parmi les autres. */
+.plein-ecran-fermer {
+  position: fixed;
+  top: max(14px, calc(env(safe-area-inset-top) + 6px));
+  right: max(14px, calc(env(safe-area-inset-right) + 6px));
+  z-index: 320;
+  width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.plein-ecran-fermer svg { width: 22px; height: 22px; }
+
 .draw-panel {
   position: absolute; left: 12px; bottom: 12px; right: 12px; max-width: 360px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);

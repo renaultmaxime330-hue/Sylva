@@ -22,7 +22,7 @@ import {
 import type { ReactNode } from "react";
 import {
   IcPin, IcTrash, IcCheck, IcRuler, IcDoc, IcBack, IcEdit,
-  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers, IcExpand, IcShrink,
+  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers, IcExpand, IcShrink, IcClose,
 } from "@/lib/icons";
 
 type LApi = typeof Leaflet;
@@ -629,6 +629,15 @@ export default function MapChantier({
   return (
     <div className="stack-gap">
       <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
+      {pleinEcran && (
+        // Bouton de sortie flottant, toujours au même endroit et jamais
+        // affecté par le défilement de la barre d'outils (qui peut contenir
+        // une dizaine de boutons sur un chantier avec équipe + tracé GPS) —
+        // sur le terrain, une sortie fiable en un geste passe avant tout.
+        <button className="plein-ecran-fermer" onClick={basculerPleinEcran} aria-label="Quitter le plein écran" title="Quitter le plein écran">
+          <IcClose />
+        </button>
+      )}
       <div className="map-toolbar">
         <button className="chip-btn" data-on={pleinEcran || undefined}
           onClick={basculerPleinEcran}
