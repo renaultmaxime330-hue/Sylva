@@ -282,7 +282,7 @@ export default function MapChantier({
         }
         return {
           color: c, weight: 3.5, opacity: 1, fillColor: c,
-          fillOpacity: t === "zone_danger" ? 0.32 : 0.18,
+          fillOpacity: t === "zone_danger" ? 0.5 : 0.4,
           dashArray: t === "zone_danger" ? "7,6" : undefined, lineJoin: "round" as const,
         };
       },
