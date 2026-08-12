@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { STATUTS, type Chantier, type Statut } from "@/lib/db";
-import { creerChantier, modifierChantier, obtenirPosition, communeDepuisPosition, type ChantierInput } from "@/lib/chantiers";
+import { creerChantier, modifierChantier, obtenirPosition, infosDepuisPosition, type ChantierInput } from "@/lib/chantiers";
 import { useDossiers } from "@/lib/queries/dossiers";
 import { creerDossier, champsVidesDossier } from "@/lib/dossiers";
 import { IcPin, IcCheck, IcBack } from "@/lib/icons";
@@ -59,10 +59,12 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
       set("lat", lat);
       set("lng", lng);
       setGeoState("idle");
-      // La commune se déduit de la position : c'est un confort, jamais une
-      // raison d'échouer — la position reste enregistrée quoi qu'il arrive.
-      const commune = await communeDepuisPosition(lat, lng);
-      if (commune) set("commune", commune);
+      // Commune et parcelle cadastrale se déduisent de la position : c'est un
+      // confort, jamais une raison d'échouer — la position reste enregistrée
+      // quoi qu'il arrive, et chaque champ n'est rempli que s'il a été trouvé.
+      const infos = await infosDepuisPosition(lat, lng);
+      if (infos.commune) set("commune", infos.commune);
+      if (infos.parcelle) set("numParcelle", infos.parcelle);
     } catch (e) {
       setGeoState("error");
       setGeoErr(e instanceof Error ? e.message : "Position indisponible.");
@@ -179,7 +181,7 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
           )}
         </div>
         {geoState === "error" && <span className="hint" style={{ color: "var(--danger)" }}>{geoErr}</span>}
-        <span className="hint">Sur le terrain, appuie sur « Ma position » : les coordonnées et la commune se remplissent toutes seules.</span>
+        <span className="hint">Sur le terrain, appuie sur « Ma position » : position, commune et numéro de parcelle se remplissent tout seuls.</span>
       </div>
 
       <div className="grid-3">

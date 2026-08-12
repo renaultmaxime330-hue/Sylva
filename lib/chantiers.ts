@@ -51,18 +51,27 @@ export async function supprimerChantier(id: string): Promise<void> {
   invalider(id);
 }
 
-/* Commune correspondant à une position, via notre propre route serveur
-   (voir app/api/geocode/route.ts pour le choix du service et de la CSP).
-   Retourne null plutôt que de lever : c'est un confort de saisie, pas une
-   donnée dont dépend l'enregistrement du chantier. */
-export async function communeDepuisPosition(lat: number, lng: number): Promise<string | null> {
+/* Commune et parcelle cadastrale correspondant à une position, via notre
+   propre route serveur (voir app/api/geocode/route.ts pour le choix des
+   services et de la CSP). Ne lève jamais : c'est un confort de saisie, pas
+   une donnée dont dépend l'enregistrement du chantier. */
+export interface InfosPosition {
+  commune: string | null;
+  parcelle: string | null;
+}
+
+export async function infosDepuisPosition(lat: number, lng: number): Promise<InfosPosition> {
+  const vide: InfosPosition = { commune: null, parcelle: null };
   try {
     const r = await apiFetch(`/api/geocode?lat=${lat}&lng=${lng}`);
-    if (!r.ok) return null;
-    const { commune } = await r.json();
-    return typeof commune === "string" && commune ? commune : null;
+    if (!r.ok) return vide;
+    const { commune, parcelle } = await r.json();
+    return {
+      commune: typeof commune === "string" && commune ? commune : null,
+      parcelle: typeof parcelle === "string" && parcelle ? parcelle : null,
+    };
   } catch {
-    return null;
+    return vide;
   }
 }
 
