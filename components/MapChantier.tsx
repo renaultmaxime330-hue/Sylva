@@ -9,6 +9,7 @@ import {
 } from "@/lib/db";
 import {
   ajouterGeometrie, supprimerGeometrie, renommerGeometrie, surfaceHa, longueurM,
+  parcelleCadastrale,
 } from "@/lib/geometries";
 import { useGeometries } from "@/lib/queries/geometries";
 import { modifierChantier } from "@/lib/chantiers";
@@ -22,7 +23,7 @@ import {
 import type { ReactNode } from "react";
 import {
   IcPin, IcTrash, IcCheck, IcRuler, IcDoc, IcBack, IcEdit,
-  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers, IcExpand, IcShrink, IcClose,
+  IcWarning, IcRoute, IcTruck, IcLogs, IcUsers, IcExpand, IcShrink, IcClose, IcMenu,
 } from "@/lib/icons";
 
 type LApi = typeof Leaflet;
@@ -142,6 +143,12 @@ export default function MapChantier({
   const [cadastre, setCadastre] = useState(false);
   const [traceFiltre, setTraceFiltre] = useState<"aucun" | "abatteur" | "debardeur" | "tous">("aucun");
   const [pleinEcran, setPleinEcran] = useState(false);
+  const [panneauOuvert, setPanneauOuvert] = useState(false);
+  /* Le tiroir ne s'anime qu'à partir du 2e rendu en plein écran : sinon le
+     passage de « pas de transform » à « translateX(-100%) » à l'ouverture du
+     plein écran se joue comme une fermeture, et on voit le panneau filer vers
+     la gauche sans l'avoir demandé. */
+  const [panneauAnime, setPanneauAnime] = useState(false);
   const [suivre, setSuivre] = useState(false);
   const watchIdRef = useRef<number | null>(null);
 
@@ -153,6 +160,11 @@ export default function MapChantier({
   const [nbPoints, setNbPoints] = useState(0);
   const [msg, setMsg] = useState<string>("");
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reprise du contour depuis le cadastre : mode « je touche la parcelle »
+  const cadastreModeRef = useRef(false);
+  const [cadastreMode, setCadastreMode] = useState(false);
+  const [cadastreEnCours, setCadastreEnCours] = useState(false);
 
   function toast(t: string) {
     setMsg(t);
@@ -215,6 +227,10 @@ export default function MapChantier({
       }
 
       map.on("click", (e: Leaflet.LeafletMouseEvent) => {
+        if (cadastreModeRef.current) {
+          void reprendreParcelleCadastrale(e.latlng.lat, e.latlng.lng);
+          return;
+        }
         const dt = drawTypeRef.current;
         if (!dt) return;
         const info = geomTypeInfo(dt);
@@ -409,7 +425,14 @@ export default function MapChantier({
      délai laisse le temps au layout CSS de se stabiliser avant de mesurer. */
   useEffect(() => {
     const t = setTimeout(() => mapRef.current?.invalidateSize(), 80);
-    if (!pleinEcran) return () => clearTimeout(t);
+    if (!pleinEcran) {
+      // En sortant, on referme le tiroir et on coupe l'animation : au prochain
+      // plein écran on repart d'un panneau fermé, sans transition parasite.
+      setPanneauOuvert(false);
+      setPanneauAnime(false);
+      return () => clearTimeout(t);
+    }
+    const raf = requestAnimationFrame(() => setPanneauAnime(true));
     // iOS Safari : bloquer le scroll uniquement sur <body> ne suffit pas
     // toujours (le viewport visuel peut quand même « rebondir ») — verrouille
     // aussi <html>, ceinture et bretelles.
@@ -420,6 +443,7 @@ export default function MapChantier({
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(t);
+      cancelAnimationFrame(raf);
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.body.classList.remove("carte-plein-ecran");
@@ -482,6 +506,44 @@ export default function MapChantier({
     setNbPoints(0);
     draftLayerRef.current?.clearLayers();
     if (mapRef.current) mapRef.current.getContainer().style.cursor = "";
+  }
+
+  function basculerCadastre() {
+    const actif = !cadastreModeRef.current;
+    if (actif) stopDraw(); // les deux modes lisent le clic sur la carte
+    cadastreModeRef.current = actif;
+    setCadastreMode(actif);
+    if (mapRef.current) mapRef.current.getContainer().style.cursor = actif ? "crosshair" : "";
+    if (actif) toast("Touche la parcelle sur la carte pour reprendre son contour.");
+  }
+
+  /* Reprend le contour officiel d'une parcelle au lieu de le dessiner à la
+     main : bien plus précis qu'un tracé au doigt, et instantané. Le fond
+     Cadastre est activé au passage, sinon on touche une parcelle qu'on ne
+     voit pas. */
+  async function reprendreParcelleCadastrale(lat: number, lng: number) {
+    if (cadastreEnCours) return;
+    setCadastreEnCours(true);
+    try {
+      const { geojson, parcelle } = await parcelleCadastrale(lat, lng);
+      const nom = parcelle ? `Parcelle ${parcelle}` : "Parcelle";
+      await ajouterGeometrie(chantier.id, "parcelle", geojson, nom);
+      annoncer("ajout", "parcelle", nom);
+      const ha = surfaceHa(geojson);
+      if (ha != null) {
+        await modifierChantier(chantier.id, { surfaceHa: ha });
+        toast(`${nom} reprise du cadastre — ${fmtHa(ha)}. Surface du chantier mise à jour ✓`);
+      } else {
+        toast(`${nom} reprise du cadastre.`);
+      }
+      cadastreModeRef.current = false;
+      setCadastreMode(false);
+      if (mapRef.current) mapRef.current.getContainer().style.cursor = "";
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Cadastre indisponible.");
+    } finally {
+      setCadastreEnCours(false);
+    }
   }
 
   async function finishPoint(dt: GeomType) {
@@ -630,6 +692,27 @@ export default function MapChantier({
   const geoms = geometries ?? [];
   const equipeLocalisee = (equipiers ?? []).filter((e) => e.lat != null && e.lng != null);
 
+  /* Mêmes outils de dessin dans les deux mises en page (sous la carte en
+     normal, dans le tiroir en plein écran) — définis une seule fois. */
+  const outilsDessin = (
+    <>
+      <button className="btn primary big draw-primary" onClick={() => startDraw("parcelle")}>
+        <IcEdit /> Dessiner la parcelle
+      </button>
+      <div className="tool-row">
+        <span className="tool-row-label muted">Ajouter :</span>
+        {GEOM_TYPES.filter((t) => t.value !== "parcelle").map((t) => {
+          const Icon = TOOL_ICON[t.value];
+          return (
+            <button key={t.value} className="tool-btn" onClick={() => startDraw(t.value)}>
+              <span className="tool-ic" style={{ color: t.couleur }}><Icon /></span> {t.label}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+
   return (
     <div className="stack-gap">
       <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
@@ -642,6 +725,19 @@ export default function MapChantier({
           <IcClose />
         </button>
       )}
+      {/* En plein écran, ce conteneur devient un tiroir latéral ; sinon il est
+          transparent pour la mise en page (`display: contents`), et la barre
+          d'outils se comporte exactement comme avant. */}
+      <div className={"carte-panneau" + (pleinEcran && panneauOuvert ? " ouvert" : "") + (panneauAnime ? " anime" : "")}>
+        {pleinEcran && (
+          <button className="panneau-onglet" onClick={() => setPanneauOuvert((v) => !v)}
+            aria-expanded={panneauOuvert}
+            aria-label={panneauOuvert ? "Masquer les outils" : "Afficher les outils"}
+            title={panneauOuvert ? "Masquer les outils" : "Outils"}>
+            {panneauOuvert ? <IcBack /> : <IcMenu />}
+          </button>
+        )}
+        <div className="panneau-contenu">
       <div className="map-toolbar">
         <button className="chip-btn" data-on={pleinEcran || undefined}
           onClick={basculerPleinEcran}
@@ -649,6 +745,13 @@ export default function MapChantier({
           title={pleinEcran ? "Quitter le plein écran" : "Plein écran"}>
           {pleinEcran ? <IcShrink /> : <IcExpand />} {pleinEcran ? "Fermer" : "Plein écran"}
         </button>
+        {!readOnly && (
+          <button className="chip-btn" data-on={cadastreMode || undefined} onClick={basculerCadastre}
+            disabled={cadastreEnCours}
+            title="Reprendre le contour officiel d'une parcelle depuis le cadastre">
+            <IcRuler /> {cadastreEnCours ? "Lecture du cadastre…" : cadastreMode ? "Touche la parcelle…" : "Parcelle du cadastre"}
+          </button>
+        )}
         <div className="seg-mini">
           {BASES.map((b) => (
             <button key={b.id} data-on={base === b.id} onClick={() => setBase(b.id)}>{b.label}</button>
@@ -683,6 +786,11 @@ export default function MapChantier({
           <button className="chip-btn" onClick={() => exporter("geojson")}>GeoJSON</button>
           <button className="chip-btn" onClick={() => exporter("gpx")}>GPX</button>
           <button className="chip-btn" onClick={() => exporter("kml")}>KML</button>
+        </div>
+      </div>
+          {pleinEcran && !readOnly && !drawType && (
+            <div className="draw-actions">{outilsDessin}</div>
+          )}
         </div>
       </div>
 
@@ -724,23 +832,8 @@ export default function MapChantier({
 
       {msg && <div className="banner fade-in"><IcCheck /> {msg}</div>}
 
-      {!readOnly && !drawType && (
-        <div className="draw-actions">
-          <button className="btn primary big draw-primary" onClick={() => startDraw("parcelle")}>
-            <IcEdit /> Dessiner la parcelle
-          </button>
-          <div className="tool-row">
-            <span className="tool-row-label muted">Ajouter :</span>
-            {GEOM_TYPES.filter((t) => t.value !== "parcelle").map((t) => {
-              const Icon = TOOL_ICON[t.value];
-              return (
-                <button key={t.value} className="tool-btn" onClick={() => startDraw(t.value)}>
-                  <span className="tool-ic" style={{ color: t.couleur }}><Icon /></span> {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {!pleinEcran && !readOnly && !drawType && (
+        <div className="draw-actions">{outilsDessin}</div>
       )}
       </div>
 

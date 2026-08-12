@@ -656,23 +656,78 @@ body.carte-plein-ecran .main,
 body.carte-plein-ecran .content {
   transform: none !important; animation: none !important; filter: none !important;
 }
+/* Hors plein écran, le conteneur du tiroir est transparent pour la mise en
+   page : la barre d'outils garde exactement sa position d'origine. */
+.carte-panneau { display: contents; }
+
+/* Plein écran : la carte occupe tout, sans rien autour. Les outils passent
+   dans un tiroir latéral qui se déploie à la demande — sur une tablette en
+   forêt, on regarde la carte 95 % du temps et on touche un réglage
+   ponctuellement. */
 .carte-zone.plein-ecran {
   position: fixed; inset: 0; z-index: 300; background: var(--bg);
-  display: flex; flex-direction: column; gap: 8px;
-  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
-           max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-  overflow: hidden;
+  padding: 0; overflow: hidden;
 }
-.carte-zone.plein-ecran .map-toolbar {
-  flex: none; margin: 0; padding: 8px 10px; border-radius: var(--r-lg);
-  background: var(--surface); box-shadow: var(--shadow);
-  max-height: 38vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+.carte-zone.plein-ecran .map-wrap { position: absolute; inset: 0; margin: 0; border-radius: 0; }
+.carte-zone.plein-ecran .map-canvas {
+  width: 100%; height: 100%; max-height: none; min-height: 0; border-radius: 0;
 }
+
+.carte-zone.plein-ecran .carte-panneau {
+  display: block; position: absolute; z-index: 310;
+  top: 0; bottom: 0; left: 0;
+  width: min(360px, 86vw);
+  transform: translateX(-100%);
+}
+/* Transition ajoutée seulement après le 1er rendu (classe posée en JS), pour
+   ne pas animer l'entrée en plein écran elle-même. */
+.carte-zone.plein-ecran .carte-panneau.anime { transition: transform var(--dur) var(--ease); }
+.carte-zone.plein-ecran .carte-panneau.ouvert { transform: translateX(0); }
+
+.carte-zone.plein-ecran .panneau-contenu {
+  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--surface); box-shadow: var(--shadow-lg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 14px;
+  padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom))
+           max(14px, env(safe-area-inset-left));
+}
+/* Dans le tiroir, les outils s'empilent : une barre horizontale qui passe à
+   la ligne serait illisible sur 360 px. */
+.carte-zone.plein-ecran .panneau-contenu .map-toolbar {
+  flex-direction: column; align-items: stretch; gap: 10px;
+}
+.carte-zone.plein-ecran .panneau-contenu .seg-mini,
+.carte-zone.plein-ecran .panneau-contenu .export-group { width: 100%; }
+.carte-zone.plein-ecran .panneau-contenu .seg-mini { display: flex; }
+.carte-zone.plein-ecran .panneau-contenu .seg-mini button { flex: 1; }
+.carte-zone.plein-ecran .panneau-contenu .chip-btn { justify-content: center; min-height: var(--tap); }
+.carte-zone.plein-ecran .panneau-contenu .draw-actions { margin: 0; }
+
+/* La languette reste accrochée au bord du tiroir : au bord de l'écran quand
+   il est fermé, contre le panneau quand il est ouvert. */
+.panneau-onglet {
+  position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 76px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-left: none;
+  border-radius: 0 var(--r) var(--r) 0;
+  box-shadow: var(--shadow);
+}
+.panneau-onglet svg { width: 22px; height: 22px; }
+
+/* Statut de dessin et messages : en surimpression au-dessus de la carte,
+   pour ne pas rogner la surface cartographiée. */
 .carte-zone.plein-ecran .draw-status,
-.carte-zone.plein-ecran .draw-actions,
-.carte-zone.plein-ecran .banner { flex: none; margin: 0; }
-.carte-zone.plein-ecran .map-wrap { flex: 1; min-height: 0; }
-.carte-zone.plein-ecran .map-canvas { width: 100%; height: 100%; max-height: none; min-height: 0; }
+.carte-zone.plein-ecran .banner {
+  position: absolute; z-index: 305; margin: 0;
+  left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+  background: var(--surface); box-shadow: var(--shadow-lg);
+  border-radius: var(--r-lg);
+}
+.carte-zone.plein-ecran .draw-status { bottom: max(12px, env(safe-area-inset-bottom)); }
+.carte-zone.plein-ecran .banner { top: max(12px, env(safe-area-inset-top)); }
 
 /* Toujours au même endroit (coin haut-droit), toujours au-dessus de tout
    (la carte, la barre d'outils même quand elle défile) — une sortie fiable

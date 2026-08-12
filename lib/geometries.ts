@@ -64,6 +64,22 @@ export async function supprimerGeometrie(id: string, chantierId: string): Promis
   invalider(chantierId);
 }
 
+/* Contour de la parcelle cadastrale sous un point (voir app/api/cadastre).
+   Lève avec un message lisible : contrairement au géocodage du formulaire,
+   c'est ici une action explicite de l'utilisateur, donc un échec doit se
+   dire (« aucune parcelle à cet endroit ») et pas passer inaperçu. */
+export interface ParcelleCadastrale {
+  geojson: GeoJSONGeometry;
+  parcelle: string | null;
+  commune: string | null;
+}
+
+export async function parcelleCadastrale(lat: number, lng: number): Promise<ParcelleCadastrale> {
+  const r = await apiFetch(`/api/cadastre?lat=${lat}&lng=${lng}`);
+  if (!r.ok) await lireErreur(r, "Cadastre indisponible pour l'instant.");
+  return await r.json();
+}
+
 export async function renommerGeometrie(id: string, nom: string, chantierId: string): Promise<void> {
   const r = await apiFetch(`/api/geometries/${id}`, {
     method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nom }),
