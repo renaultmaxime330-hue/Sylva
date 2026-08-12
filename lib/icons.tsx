@@ -1,29 +1,20 @@
 import type { SVGProps } from "react";
 
-/* Jeu d'icônes maison — style « outline » professionnel.
-   Trait à 2 : un peu plus gras que la norme web, assumé — ces icônes sont
-   lues en extérieur, en plein soleil, souvent avec des gants. */
+/* Jeu d'icônes maison — trait 1.8, style « outline » professionnel. */
 
 type P = SVGProps<SVGSVGElement>;
 const base = (p: P) => ({
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 2,
+  strokeWidth: 1.8,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
   ...p,
 });
 
-/* Marque Sylva — rondin vu en bout : cernes de croissance dont le cœur est
-   volontairement décentré, comme sur un vrai billon. Un empilement de
-   cercles parfaitement concentriques se lirait comme une cible. */
 export const IcTree = (p: P) => (
-  <svg {...base(p)}>
-    <circle cx="12" cy="12" r="9" />
-    <circle cx="11.2" cy="12.5" r="5.6" />
-    <circle cx="10.6" cy="12.9" r="2.3" />
-  </svg>
+  <svg {...base(p)}><path d="M12 2 6 11h4l-4 7h12l-4-7h4L12 2Z" /><line x1="12" y1="18" x2="12" y2="22" /></svg>
 );
 export const IcDashboard = (p: P) => (
   <svg {...base(p)}><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></svg>

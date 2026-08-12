@@ -607,9 +607,8 @@
   .report { box-shadow: none !important; border: none !important; padding: 0 !important; }
   :root, :root[data-theme="dark"], :root[data-theme="light"] {
     --bg: #fff; --surface: #fff; --surface-2: #f3f3f3; --text: #111; --text-muted: #555; --border: #bbb;
-    /* Ambre assombri : l'ambre écran serait délavé à l'impression. */
-    --accent: #8A4B0E; --accent-strong: #6B390A; --accent-soft: #F2E4D2;
-    --st-done: #3F6633; --danger: #b02a1a; --wood: #8A5A2B;
+    --accent: #2E6B41; --accent-strong: #1F4E2E; --accent-soft: #e4ede2;
+    --st-done: #2E6B41; --danger: #b02a1a; --wood: #A75F24;
   }
   body { background: #fff !important; }
   .report-grid > div, table, tr { break-inside: avoid; }
