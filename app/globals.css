@@ -6,51 +6,57 @@
    ============================================================ */
 
 :root {
-  /* Neutres — papier naturel légèrement teinté de vert */
-  --bg: #F1F3E9;
-  --surface: #FCFCF7;
-  --surface-2: #E9EDDD;
-  --border: #D8DDC8;
-  --text: #182118;
-  --text-muted: #566150;
+  /* Identité « bois brûlé / ambre ».
+     Note : le vert n'a pas disparu, il est devenu strictement sémantique
+     (statut « terminé », parcelles sur la carte) au lieu d'être la couleur
+     de marque. Les couleurs des tracés sont stockées par géométrie en base
+     et ne dépendent pas de ces variables. */
 
-  /* Accent (vert sapin — conservé à l'identique, la carte s'y réfère) */
-  --accent: #2E6B41;
-  --accent-strong: #1F4E2E;
+  /* Neutres — papier chaud, légèrement ambré */
+  --bg: #F5EFE7;
+  --surface: #FFFCF8;
+  --surface-2: #EDE3D7;
+  --border: #DCCFBE;
+  --text: #2A211A;
+  --text-muted: #6B5A49;
+
+  /* Accent (ambre — assombri en thème clair pour rester lisible sur papier) */
+  --accent: #B8681A;
+  --accent-strong: #96520F;
   --accent-contrast: #ffffff;
-  --accent-soft: #E2ECDB;
-  --wood: #A75F24;
-  --wood-soft: #F0E4D4;
-  /* Acier — accent propre au module Matériel (robustesse/précision), distinct du vert/bois */
-  --steel: #46606B;
-  --steel-soft: #E4EAEC;
+  --accent-soft: #F7E7D3;
+  --wood: #B87333;
+  --wood-soft: #F2E4D2;
+  /* Acier — accent propre au module Matériel, réchauffé pour rester dans la famille */
+  --steel: #6B6257;
+  --steel-soft: #ECE6DE;
 
   /* Sémantique / statuts */
-  --st-todo: #6B7280;
-  --st-todo-bg: #E7E9EC;
-  --st-doing: #A75F24;
-  --st-doing-bg: #F4E6D6;
-  --st-done: #2E6B41;
-  --st-done-bg: #DDEBDD;
-  --danger: #C0392B;
-  --danger-bg: #F7E1DE;
+  --st-todo: #7A6E62;
+  --st-todo-bg: #EBE5DC;
+  --st-doing: #B8681A;
+  --st-doing-bg: #F7E7D3;
+  --st-done: #4F7A3F;
+  --st-done-bg: #E4EDDC;
+  --danger: #B23A22;
+  --danger-bg: #F7E2DC;
 
-  /* Barre latérale — sapin profond, dans les deux thèmes */
-  --sb-bg: #152A1C;
-  --sb-bg-2: #1B3524;
-  --sb-text: #EAF2E6;
-  --sb-muted: #9DB5A0;
-  --sb-icon: #8FB598;
-  --sb-hover: rgba(234, 242, 230, .07);
-  --sb-active-bg: rgba(143, 209, 158, .16);
-  --sb-active-text: #DFF3E0;
-  --sb-border: rgba(234, 242, 230, .12);
+  /* Barre latérale — bois brûlé profond, dans les deux thèmes */
+  --sb-bg: #201810;
+  --sb-bg-2: #2C2116;
+  --sb-text: #F0E9E1;
+  --sb-muted: #B0A08D;
+  --sb-icon: #C99A5E;
+  --sb-hover: rgba(240, 233, 225, .07);
+  --sb-active-bg: rgba(232, 145, 45, .18);
+  --sb-active-text: #F6D9AE;
+  --sb-border: rgba(240, 233, 225, .12);
 
-  /* Ombres — teintées de sous-bois, douces et étagées */
-  --shadow-sm: 0 1px 2px rgba(24, 33, 24, .05), 0 2px 6px -2px rgba(24, 33, 24, .06);
-  --shadow: 0 1px 2px rgba(24, 33, 24, .05), 0 10px 28px -12px rgba(24, 33, 24, .20);
-  --shadow-lg: 0 2px 6px rgba(24, 33, 24, .06), 0 18px 48px -16px rgba(24, 33, 24, .30);
-  --shadow-accent: 0 6px 20px -8px rgba(46, 107, 65, .45);
+  /* Ombres — teintées de brun chaud, douces et étagées */
+  --shadow-sm: 0 1px 2px rgba(42, 33, 26, .05), 0 2px 6px -2px rgba(42, 33, 26, .06);
+  --shadow: 0 1px 2px rgba(42, 33, 26, .05), 0 10px 28px -12px rgba(42, 33, 26, .20);
+  --shadow-lg: 0 2px 6px rgba(42, 33, 26, .06), 0 18px 48px -16px rgba(42, 33, 26, .30);
+  --shadow-accent: 0 6px 20px -8px rgba(184, 104, 26, .45);
 
   /* Focus visible (accessibilité clavier) */
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
@@ -74,66 +80,68 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0F150F;
-    --surface: #161D16;
-    --surface-2: #1F2A1F;
-    --border: #2C382C;
-    --text: #E9EEE6;
-    --text-muted: #9AA893;
-    --accent: #63A473;
-    --accent-strong: #86C593;
-    --accent-contrast: #0D140D;
-    --accent-soft: #1D2A1E;
-    --wood: #D2914E;
-    --wood-soft: #2A2016;
-    --steel: #8DA8B3;
-    --steel-soft: #1D272B;
-    --st-todo: #98A0AC;
-    --st-todo-bg: #23282E;
-    --st-doing: #D2914E;
-    --st-doing-bg: #2A2016;
-    --st-done: #63A473;
-    --st-done-bg: #1D2A1E;
+    --bg: #1A1512;
+    --surface: #221B16;
+    --surface-2: #2E251E;
+    --border: #3D3128;
+    --text: #F0E9E1;
+    --text-muted: #A89684;
+    --accent: #E8912D;
+    --accent-strong: #F5A94D;
+    --accent-contrast: #1A1512;
+    --accent-soft: #2E2318;
+    --wood: #B87333;
+    --wood-soft: #2A1F16;
+    --steel: #A99B8B;
+    --steel-soft: #262019;
+    --st-todo: #A2958A;
+    --st-todo-bg: #2A241E;
+    --st-doing: #E8912D;
+    --st-doing-bg: #2E2318;
+    --st-done: #7FAE6B;
+    --st-done-bg: #212A1C;
     --danger: #E8776B;
-    --danger-bg: #2A1815;
-    --sb-bg: #0C130D;
-    --sb-bg-2: #121F15;
-    --sb-border: rgba(234, 242, 230, .09);
+    --danger-bg: #2E1A15;
+    --sb-bg: #150F0B;
+    --sb-bg-2: #211812;
+    --sb-border: rgba(240, 233, 225, .09);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
     --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 12px 32px -14px rgba(0, 0, 0, .65);
     --shadow-lg: 0 16px 48px -12px rgba(0, 0, 0, .72);
-    --shadow-accent: 0 6px 20px -8px rgba(99, 164, 115, .35);
+    --shadow-accent: 0 6px 20px -8px rgba(232, 145, 45, .40);
   }
 }
 
 /* Bascule manuelle — doit gagner sur le media query dans les deux sens */
 :root[data-theme="light"] {
-  --bg: #F1F3E9; --surface: #FCFCF7; --surface-2: #E9EDDD; --border: #D8DDC8;
-  --text: #182118; --text-muted: #566150;
-  --accent: #2E6B41; --accent-strong: #1F4E2E; --accent-contrast: #ffffff;
-  --accent-soft: #E2ECDB; --wood: #A75F24; --wood-soft: #F0E4D4;
-  --steel: #46606B; --steel-soft: #E4EAEC;
-  --st-todo: #6B7280; --st-todo-bg: #E7E9EC; --st-doing: #A75F24; --st-doing-bg: #F4E6D6;
-  --st-done: #2E6B41; --st-done-bg: #DDEBDD; --danger: #C0392B; --danger-bg: #F7E1DE;
-  --sb-bg: #152A1C; --sb-bg-2: #1B3524; --sb-border: rgba(234, 242, 230, .12);
-  --shadow-sm: 0 1px 2px rgba(24, 33, 24, .05), 0 2px 6px -2px rgba(24, 33, 24, .06);
-  --shadow: 0 1px 2px rgba(24, 33, 24, .05), 0 10px 28px -12px rgba(24, 33, 24, .20);
-  --shadow-lg: 0 2px 6px rgba(24, 33, 24, .06), 0 18px 48px -16px rgba(24, 33, 24, .30);
-  --shadow-accent: 0 6px 20px -8px rgba(46, 107, 65, .45);
+  --bg: #F5EFE7; --surface: #FFFCF8; --surface-2: #EDE3D7; --border: #DCCFBE;
+  --text: #2A211A; --text-muted: #6B5A49;
+  --accent: #B8681A; --accent-strong: #96520F; --accent-contrast: #ffffff;
+  --accent-soft: #F7E7D3; --wood: #B87333; --wood-soft: #F2E4D2;
+  --steel: #6B6257; --steel-soft: #ECE6DE;
+  --st-todo: #7A6E62; --st-todo-bg: #EBE5DC; --st-doing: #B8681A; --st-doing-bg: #F7E7D3;
+  --st-done: #4F7A3F; --st-done-bg: #E4EDDC; --danger: #B23A22; --danger-bg: #F7E2DC;
+  --sb-bg: #201810; --sb-bg-2: #2C2116; --sb-border: rgba(240, 233, 225, .12);
+  --sb-icon: #C99A5E; --sb-active-bg: rgba(232, 145, 45, .18); --sb-active-text: #F6D9AE;
+  --shadow-sm: 0 1px 2px rgba(42, 33, 26, .05), 0 2px 6px -2px rgba(42, 33, 26, .06);
+  --shadow: 0 1px 2px rgba(42, 33, 26, .05), 0 10px 28px -12px rgba(42, 33, 26, .20);
+  --shadow-lg: 0 2px 6px rgba(42, 33, 26, .06), 0 18px 48px -16px rgba(42, 33, 26, .30);
+  --shadow-accent: 0 6px 20px -8px rgba(184, 104, 26, .45);
 }
 :root[data-theme="dark"] {
-  --bg: #0F150F; --surface: #161D16; --surface-2: #1F2A1F; --border: #2C382C;
-  --text: #E9EEE6; --text-muted: #9AA893;
-  --accent: #63A473; --accent-strong: #86C593; --accent-contrast: #0D140D;
-  --accent-soft: #1D2A1E; --wood: #D2914E; --wood-soft: #2A2016;
-  --steel: #8DA8B3; --steel-soft: #1D272B;
-  --st-todo: #98A0AC; --st-todo-bg: #23282E; --st-doing: #D2914E; --st-doing-bg: #2A2016;
-  --st-done: #63A473; --st-done-bg: #1D2A1E; --danger: #E8776B; --danger-bg: #2A1815;
-  --sb-bg: #0C130D; --sb-bg-2: #121F15; --sb-border: rgba(234, 242, 230, .09);
+  --bg: #1A1512; --surface: #221B16; --surface-2: #2E251E; --border: #3D3128;
+  --text: #F0E9E1; --text-muted: #A89684;
+  --accent: #E8912D; --accent-strong: #F5A94D; --accent-contrast: #1A1512;
+  --accent-soft: #2E2318; --wood: #B87333; --wood-soft: #2A1F16;
+  --steel: #A99B8B; --steel-soft: #262019;
+  --st-todo: #A2958A; --st-todo-bg: #2A241E; --st-doing: #E8912D; --st-doing-bg: #2E2318;
+  --st-done: #7FAE6B; --st-done-bg: #212A1C; --danger: #E8776B; --danger-bg: #2E1A15;
+  --sb-bg: #150F0B; --sb-bg-2: #211812; --sb-border: rgba(240, 233, 225, .09);
+  --sb-icon: #C99A5E; --sb-active-bg: rgba(232, 145, 45, .18); --sb-active-text: #F6D9AE;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
   --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 12px 32px -14px rgba(0, 0, 0, .65);
   --shadow-lg: 0 16px 48px -12px rgba(0, 0, 0, .72);
-  --shadow-accent: 0 6px 20px -8px rgba(99, 164, 115, .35);
+  --shadow-accent: 0 6px 20px -8px rgba(232, 145, 45, .40);
 }
 
 * { box-sizing: border-box; padding: 0; margin: 0; }
@@ -162,11 +170,20 @@ html[data-theme="dark"] { color-scheme: dark; }
 body {
   min-height: 100%;
   color: var(--text);
-  /* Papier + lumière de canopée + cernes topographiques (pur CSS, aucun asset).
-     `fixed` peut être ignoré sur iOS : le motif défile alors avec la page, sans gêne. */
+  /* Veines de bois : lueur ambrée + cernes de croissance très étirés (des
+     cercles concentriques déformés horizontalement donnent le fil du bois),
+     plus un fin grain vertical. Pur CSS, aucun asset.
+     `fixed` peut être ignoré sur iOS : le motif défile alors avec la page,
+     sans gêne. */
   background:
-    radial-gradient(1100px 700px at 86% -12%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 62%) fixed,
-    repeating-radial-gradient(circle at 112% -30%, transparent 0 72px, color-mix(in srgb, var(--accent) 6%, transparent) 72px calc(72px + 1.5px)) fixed,
+    radial-gradient(1200px 600px at 88% -14%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%) fixed,
+    repeating-radial-gradient(ellipse 1400px 190px at 8% 34%,
+      transparent 0 46px,
+      color-mix(in srgb, var(--wood) 7%, transparent) 46px calc(46px + 2px),
+      transparent calc(46px + 2px) 92px) fixed,
+    repeating-linear-gradient(90deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--wood) 3%, transparent) 7px 8px) fixed,
     var(--bg);
   font-family: var(--font-sans);
   font-size: 16px;
