@@ -52,58 +52,82 @@ export async function supprimerChantier(id: string): Promise<void> {
 }
 
 /* Géolocalisation — Promise autour de l'API navigateur.
-   Un seul getCurrentPosition() renvoie souvent le tout premier fix GPS, qui
-   est régulièrement le moins bon (la précision s'affine sur les secondes
-   suivantes). On écoute donc plusieurs positions successives et on garde la
-   plus précise (accuracy la plus basse), jusqu'à un fix jugé assez bon
-   (≤ 8 m) ou l'expiration du délai — au pire, on renvoie la meilleure vue
-   à défaut d'une excellente. */
-const PRECISION_SUFFISANTE_M = 8;
-const DELAI_AFFINAGE_MS = 8000;
 
-export function obtenirPosition(): Promise<{ lat: number; lng: number }> {
+   Le premier fix GPS est régulièrement le moins bon (la précision s'affine
+   sur les secondes suivantes) : on écoute donc plusieurs positions et on
+   garde la plus précise, jusqu'à un fix satisfaisant ou l'échéance.
+
+   Deux garde-fous, appris d'une version précédente qui échouait en forêt :
+   - le délai doit être large. Sous couvert forestier ou GPS froid, un fix
+     haute précision « tout frais » peut demander plus de 10 s ; trop court,
+     watchPosition renvoie une erreur TIMEOUT et on repartait les mains vides.
+   - une position approximative est demandée en parallèle, comme filet. Elle
+     ne sert JAMAIS à conclure en avance (une position en cache pourrait
+     dater d'un autre chantier) : uniquement de repli à l'échéance si le GPS
+     précis n'a rien donné. Mieux vaut une position à 500 m à corriger qu'un
+     message d'erreur au milieu d'une parcelle.
+   On ne rejette donc que si l'autorisation est refusée ou si absolument
+   aucune position n'a pu être obtenue. */
+const PRECISION_CIBLE_M = 10;
+const DELAI_TOTAL_MS = 20000;
+
+export function obtenirPosition(
+  surProgres?: (precisionM: number) => void
+): Promise<{ lat: number; lng: number }> {
   return new Promise((resolve, reject) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       reject(new Error("La géolocalisation n'est pas disponible sur cet appareil."));
       return;
     }
-    let meilleure: { lat: number; lng: number; accuracy: number } | null = null;
+    type Fix = { lat: number; lng: number; accuracy: number };
+    let meilleure: Fix | null = null;
+    let repli: Fix | null = null;
     let watchId: number | null = null;
+    let refusee = false;
+    let watchMort = false;
     let fini = false;
 
-    function terminer(cb: () => void) {
+    function finir() {
       if (fini) return;
       fini = true;
+      clearTimeout(delai);
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
-      cb();
+      const choisie = meilleure ?? repli;
+      if (refusee) reject(new Error("Autorise la localisation pour enregistrer ta position."));
+      else if (choisie) resolve({ lat: choisie.lat, lng: choisie.lng });
+      else reject(new Error("Position indisponible — vérifie que le GPS est activé, puis réessaie."));
     }
 
-    const delai = setTimeout(() => {
-      terminer(() => {
-        if (meilleure) resolve({ lat: meilleure.lat, lng: meilleure.lng });
-        else reject(new Error("Position indisponible pour l'instant."));
-      });
-    }, DELAI_AFFINAGE_MS);
+    const delai = setTimeout(finir, DELAI_TOTAL_MS);
 
     watchId = navigator.geolocation.watchPosition(
       (p) => {
         const accuracy = p.coords.accuracy;
         if (!meilleure || accuracy < meilleure.accuracy) {
           meilleure = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy };
+          surProgres?.(Math.round(accuracy));
         }
-        if (accuracy <= PRECISION_SUFFISANTE_M) {
-          clearTimeout(delai);
-          terminer(() => resolve({ lat: meilleure!.lat, lng: meilleure!.lng }));
-        }
+        if (accuracy <= PRECISION_CIBLE_M) finir();
       },
       (err) => {
-        clearTimeout(delai);
-        terminer(() => {
-          if (meilleure) resolve({ lat: meilleure.lat, lng: meilleure.lng });
-          else reject(err);
-        });
+        // Autorisation refusée : insister ne sert à rien, on s'arrête net.
+        if (err.code === err.PERMISSION_DENIED) { refusee = true; finir(); return; }
+        // TIMEOUT / POSITION_UNAVAILABLE : non fatal, mais le GPS précis ne
+        // donnera plus rien. Inutile d'attendre l'échéance si on a déjà de
+        // quoi répondre — sinon on laisse au repli le temps d'arriver.
+        watchMort = true;
+        if (meilleure ?? repli) finir();
       },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: DELAI_AFFINAGE_MS }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: DELAI_TOTAL_MS }
+    );
+
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        repli = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
+        if (watchMort) finir(); // le GPS précis a déjà renoncé : ce repli est notre réponse
+      },
+      (err) => { if (err.code === err.PERMISSION_DENIED) { refusee = true; finir(); } },
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: DELAI_TOTAL_MS }
     );
   });
 }

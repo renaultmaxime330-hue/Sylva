@@ -41,6 +41,7 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
   const [saving, setSaving] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle");
   const [geoErr, setGeoErr] = useState("");
+  const [geoPrecision, setGeoPrecision] = useState<number | null>(null);
 
   const set = <K extends keyof ChantierInput>(k: K, v: ChantierInput[K]) =>
     setF((prev) => ({ ...prev, [k]: v }));
@@ -48,8 +49,11 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
   async function capterGPS() {
     setGeoState("loading");
     setGeoErr("");
+    setGeoPrecision(null);
     try {
-      const { lat, lng } = await obtenirPosition();
+      // La précision s'affine sur plusieurs secondes : on l'affiche au fur et
+      // à mesure, sinon l'attente passe pour un blocage.
+      const { lat, lng } = await obtenirPosition(setGeoPrecision);
       set("lat", lat);
       set("lng", lng);
       setGeoState("idle");
@@ -151,7 +155,9 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
         <label>Coordonnées GPS</label>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <button type="button" className="btn" onClick={capterGPS} disabled={geoState === "loading"}>
-            <IcPin /> {geoState === "loading" ? "Localisation…" : "Ma position actuelle"}
+            <IcPin /> {geoState === "loading"
+              ? (geoPrecision != null ? `Affinage… ±${geoPrecision} m` : "Localisation…")
+              : "Ma position actuelle"}
           </button>
           <span className="mono" style={{ fontSize: 14, color: "var(--text-muted)" }}>
             {formatGPS(f.lat, f.lng)}
