@@ -13,8 +13,8 @@ import { bilan, supprimerFinance } from "@/lib/finances";
 import StatutPill from "@/components/StatutPill";
 import VolumesChantier from "@/components/VolumesChantier";
 import MapChantier from "@/components/MapChantier";
-import { formatDate, formatSurface, formatGPS } from "@/lib/format";
-import { IcBack, IcEdit, IcTrash, IcChart, IcCheck, IcClock, IcEuro, IcPlus } from "@/lib/icons";
+import { formatDate, formatSurface, lienGoogleMaps } from "@/lib/format";
+import { IcBack, IcEdit, IcTrash, IcChart, IcCheck, IcClock, IcEuro, IcPlus, IcPin } from "@/lib/icons";
 
 type Tab = "infos" | "carte" | "volumes" | "finances";
 
@@ -97,12 +97,13 @@ export default function FicheChantier() {
 function OngletInfos({ chantier: c }: { chantier: Chantier }) {
   const { data: dossiers } = useDossiers();
   const dossier = dossiers?.find((d) => d.id === c.dossierId);
-  const cells: { k: string; v: string; mono?: boolean }[] = [
+  const maps = lienGoogleMaps(c.lat, c.lng);
+  const cells: { k: string; v: string; mono?: boolean; lien?: string }[] = [
     { k: "Dossier", v: dossier?.nom ?? "—" },
     { k: "Propriétaire", v: c.proprietaire || "—" },
     { k: "Client", v: c.client || "—" },
     { k: "Commune", v: c.commune || "—" },
-    { k: "Coordonnées GPS", v: formatGPS(c.lat, c.lng), mono: true },
+    { k: "Position", v: maps ? "Ouvrir dans Google Maps" : "—", lien: maps ?? undefined },
     { k: "Date de début", v: formatDate(c.dateDebut) },
     { k: "Date de fin", v: formatDate(c.dateFin) },
   ];
@@ -117,7 +118,13 @@ function OngletInfos({ chantier: c }: { chantier: Chantier }) {
         {cells.map((cell) => (
           <div className="info-cell" key={cell.k}>
             <span className="k">{cell.k}</span>
-            <span className={"v" + (cell.mono ? " mono" : "")}>{cell.v}</span>
+            {cell.lien ? (
+              <a className="v lien-maps" href={cell.lien} target="_blank" rel="noopener noreferrer">
+                <IcPin /> {cell.v}
+              </a>
+            ) : (
+              <span className={"v" + (cell.mono ? " mono" : "")}>{cell.v}</span>
+            )}
           </div>
         ))}
       </div>

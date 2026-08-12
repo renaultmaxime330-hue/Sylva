@@ -24,6 +24,14 @@ export function formatGPS(lat?: number, lng?: number): string {
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
+/* Lien Google Maps vers un point — sur le terrain, ouvrir l'itinéraire est
+   plus utile que lire des décimales. Format `?q=lat,lng` : reconnu aussi
+   bien par le site que par l'appli mobile Google Maps. */
+export function lienGoogleMaps(lat?: number, lng?: number): string | null {
+  if (lat == null || lng == null) return null;
+  return `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+}
+
 export function formatLongueur(m?: number): string {
   if (m == null || isNaN(m)) return "—";
   if (m >= 1000) {

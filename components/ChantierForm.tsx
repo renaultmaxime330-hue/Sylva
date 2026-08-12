@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { STATUTS, type Chantier, type Statut } from "@/lib/db";
-import { creerChantier, modifierChantier, obtenirPosition, type ChantierInput } from "@/lib/chantiers";
+import { creerChantier, modifierChantier, obtenirPosition, communeDepuisPosition, type ChantierInput } from "@/lib/chantiers";
 import { useDossiers } from "@/lib/queries/dossiers";
 import { creerDossier, champsVidesDossier } from "@/lib/dossiers";
 import { IcPin, IcCheck, IcBack } from "@/lib/icons";
-import { formatGPS } from "@/lib/format";
+import { lienGoogleMaps } from "@/lib/format";
 
 const PEUPLEMENTS = ["Futaie régulière", "Futaie irrégulière", "Taillis", "Éclaircie", "Coupe rase", "Chablis", "Autre"];
 const NOUVEAU_DOSSIER = "__nouveau__";
@@ -46,6 +46,8 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
   const set = <K extends keyof ChantierInput>(k: K, v: ChantierInput[K]) =>
     setF((prev) => ({ ...prev, [k]: v }));
 
+  const lienMaps = lienGoogleMaps(f.lat, f.lng);
+
   async function capterGPS() {
     setGeoState("loading");
     setGeoErr("");
@@ -57,6 +59,10 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
       set("lat", lat);
       set("lng", lng);
       setGeoState("idle");
+      // La commune se déduit de la position : c'est un confort, jamais une
+      // raison d'échouer — la position reste enregistrée quoi qu'il arrive.
+      const commune = await communeDepuisPosition(lat, lng);
+      if (commune) set("commune", commune);
     } catch (e) {
       setGeoState("error");
       setGeoErr(e instanceof Error ? e.message : "Position indisponible.");
@@ -152,16 +158,20 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
 
       {/* GPS */}
       <div className="field">
-        <label>Coordonnées GPS</label>
+        <label>Position</label>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <button type="button" className="btn" onClick={capterGPS} disabled={geoState === "loading"}>
             <IcPin /> {geoState === "loading"
               ? (geoPrecision != null ? `Affinage… ±${geoPrecision} m` : "Localisation…")
               : "Ma position actuelle"}
           </button>
-          <span className="mono" style={{ fontSize: 14, color: "var(--text-muted)" }}>
-            {formatGPS(f.lat, f.lng)}
-          </span>
+          {lienMaps ? (
+            <a className="btn ghost" href={lienMaps} target="_blank" rel="noopener noreferrer">
+              <IcPin /> Ouvrir dans Google Maps
+            </a>
+          ) : (
+            <span className="hint">Aucune position enregistrée</span>
+          )}
           {(f.lat != null || f.lng != null) && (
             <button type="button" className="btn ghost" onClick={() => { set("lat", undefined); set("lng", undefined); }}>
               Effacer
@@ -169,7 +179,7 @@ export default function ChantierForm({ initial }: { initial?: Chantier }) {
           )}
         </div>
         {geoState === "error" && <span className="hint" style={{ color: "var(--danger)" }}>{geoErr}</span>}
-        <span className="hint">Sur le terrain, appuie sur « Ma position » pour enregistrer les coordonnées automatiquement.</span>
+        <span className="hint">Sur le terrain, appuie sur « Ma position » : les coordonnées et la commune se remplissent toutes seules.</span>
       </div>
 
       <div className="grid-3">

@@ -51,6 +51,21 @@ export async function supprimerChantier(id: string): Promise<void> {
   invalider(id);
 }
 
+/* Commune correspondant à une position, via notre propre route serveur
+   (voir app/api/geocode/route.ts pour le choix du service et de la CSP).
+   Retourne null plutôt que de lever : c'est un confort de saisie, pas une
+   donnée dont dépend l'enregistrement du chantier. */
+export async function communeDepuisPosition(lat: number, lng: number): Promise<string | null> {
+  try {
+    const r = await apiFetch(`/api/geocode?lat=${lat}&lng=${lng}`);
+    if (!r.ok) return null;
+    const { commune } = await r.json();
+    return typeof commune === "string" && commune ? commune : null;
+  } catch {
+    return null;
+  }
+}
+
 /* Géolocalisation — Promise autour de l'API navigateur.
 
    Le premier fix GPS est régulièrement le moins bon (la précision s'affine

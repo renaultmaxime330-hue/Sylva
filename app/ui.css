@@ -689,6 +689,13 @@ body.carte-plein-ecran .content {
 }
 .plein-ecran-fermer svg { width: 22px; height: 22px; }
 
+.lien-maps {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--accent); text-decoration: none; font-weight: 600;
+}
+.lien-maps:hover { text-decoration: underline; }
+.lien-maps svg { width: 16px; height: 16px; flex: none; }
+
 .draw-panel {
   position: absolute; left: 12px; bottom: 12px; right: 12px; max-width: 360px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
