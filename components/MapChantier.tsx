@@ -623,8 +623,10 @@ export default function MapChantier({
     }
     const role = monRole ?? "abatteur";
     let premiere = true;
+    let panneSignalee = false;
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        panneSignalee = false;
         const { latitude: lat, longitude: lng } = pos.coords;
         const L = LRef.current, map = mapRef.current;
         if (!L || !map) return;
@@ -634,11 +636,26 @@ export default function MapChantier({
         posMarkerRef.current = L.marker([lat, lng], { icon: makeLiveBadge(L, COULEUR_ROLE[role]), zIndexOffset: 1000 }).addTo(map);
       },
       (e) => {
-        alert("Position indisponible : " + e.message);
-        setSuivre(false);
-        watchIdRef.current = null;
+        // Autorisation refusée : le suivi ne pourra jamais fonctionner, on arrête.
+        if (e.code === e.PERMISSION_DENIED) {
+          toast("Autorise la localisation pour suivre ta position.");
+          if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+          setSuivre(false);
+          return;
+        }
+        /* TIMEOUT / POSITION_UNAVAILABLE : surtout PAS d'arrêt. Sous couvert
+           forestier le premier point tarde régulièrement, et couper le suivi
+           au premier délai dépassé (ce que faisait la version précédente,
+           avec en prime le message brut du navigateur — « Timeout expired »)
+           rendait le bouton inutilisable justement là où il sert. On prévient
+           une seule fois et on laisse le GPS accrocher. */
+        if (!panneSignalee) {
+          panneSignalee = true;
+          toast("GPS pas encore accroché — le suivi reste actif.");
+        }
       },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 }
     );
     setSuivre(true);
   }

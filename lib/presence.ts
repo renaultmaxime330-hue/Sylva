@@ -186,12 +186,14 @@ export function usePresence(): EtatPresence {
         setMoi({ lat, lng, precisionM, maj: new Date().toISOString(), trace: moiTraceRef.current });
         diffuser({ lat, lng, precisionM });
       },
+      // Un délai dépassé n'interrompt pas l'écoute : le message le dit, sinon
+      // on annonce une panne alors que le GPS est encore en train d'accrocher.
       (e) => setErreur(
         e.code === e.PERMISSION_DENIED
           ? "Autorise la localisation pour partager ta position."
-          : "Position indisponible pour l'instant."
+          : "GPS pas encore accroché — le partage reste actif."
       ),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 }
     );
   }, [diffuser, recomposer]);
 
