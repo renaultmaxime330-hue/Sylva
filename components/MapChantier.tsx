@@ -418,6 +418,16 @@ export default function MapChantier({
     else if (map.hasLayer(c)) map.removeLayer(c);
   }, [ready, cadastre]);
 
+  /* Replier/déplier la barre latérale change la largeur réelle de la carte
+     (elle est dans le flux, pas en surimpression) : sans invalidateSize()
+     Leaflet garderait l'ancienne largeur, avec une bande de tuiles manquantes.
+     Le délai couvre la durée de la transition CSS. */
+  useEffect(() => {
+    if (!pleinEcran) return;
+    const t = setTimeout(() => mapRef.current?.invalidateSize(), 260);
+    return () => clearTimeout(t);
+  }, [panneauOuvert, pleinEcran]);
+
   /* Plein écran : le conteneur passe en position fixed (voir CSS), donc la
      taille réelle du canvas Leaflet change sans que la fenêtre ne se
      redimensionne — sans invalidateSize() la carte resterait affichée à
@@ -432,6 +442,9 @@ export default function MapChantier({
       setPanneauAnime(false);
       return () => clearTimeout(t);
     }
+    // La barre latérale s'ouvre d'emblée : en plein écran on veut voir ses
+    // outils, pas avoir à les deviner derrière une languette.
+    setPanneauOuvert(true);
     const raf = requestAnimationFrame(() => setPanneauAnime(true));
     // iOS Safari : bloquer le scroll uniquement sur <body> ne suffit pas
     // toujours (le viewport visuel peut quand même « rebondir ») — verrouille

@@ -660,32 +660,35 @@ body.carte-plein-ecran .content {
    page : la barre d'outils garde exactement sa position d'origine. */
 .carte-panneau { display: contents; }
 
-/* Plein écran : la carte occupe tout, sans rien autour. Les outils passent
-   dans un tiroir latéral qui se déploie à la demande — sur une tablette en
-   forêt, on regarde la carte 95 % du temps et on touche un réglage
-   ponctuellement. */
+/* Plein écran : barre latérale d'outils à gauche, carte à droite. La barre
+   est dans le flux (et non en surimpression) : rien ne masque la carte, et
+   la languette permet de la replier pour rendre toute la largeur au terrain. */
 .carte-zone.plein-ecran {
   position: fixed; inset: 0; z-index: 300; background: var(--bg);
   padding: 0; overflow: hidden;
+  display: flex; flex-direction: row;
 }
-.carte-zone.plein-ecran .map-wrap { position: absolute; inset: 0; margin: 0; border-radius: 0; }
+.carte-zone.plein-ecran .map-wrap {
+  position: relative; flex: 1; min-width: 0; margin: 0; border-radius: 0;
+}
 .carte-zone.plein-ecran .map-canvas {
   width: 100%; height: 100%; max-height: none; min-height: 0; border-radius: 0;
 }
 
 .carte-zone.plein-ecran .carte-panneau {
-  display: block; position: absolute; z-index: 310;
-  top: 0; bottom: 0; left: 0;
-  width: min(360px, 86vw);
-  transform: translateX(-100%);
+  display: block; position: relative; z-index: 310;
+  flex: none; width: 0; overflow: visible;
 }
+.carte-zone.plein-ecran .carte-panneau.ouvert { width: min(320px, 80vw); }
 /* Transition ajoutée seulement après le 1er rendu (classe posée en JS), pour
    ne pas animer l'entrée en plein écran elle-même. */
-.carte-zone.plein-ecran .carte-panneau.anime { transition: transform var(--dur) var(--ease); }
-.carte-zone.plein-ecran .carte-panneau.ouvert { transform: translateX(0); }
+.carte-zone.plein-ecran .carte-panneau.anime { transition: width var(--dur) var(--ease); }
 
 .carte-zone.plein-ecran .panneau-contenu {
-  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  width: 100%; height: 100%;
+  /* Repliée, la barre fait 0 px : on masque horizontalement pour que son
+     contenu ne déborde pas sur la carte pendant l'animation. */
+  overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: var(--surface); box-shadow: var(--shadow-lg);
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 14px;
@@ -718,16 +721,20 @@ body.carte-plein-ecran .content {
 .panneau-onglet svg { width: 22px; height: 22px; }
 
 /* Statut de dessin et messages : en surimpression au-dessus de la carte,
-   pour ne pas rogner la surface cartographiée. */
+   pour ne pas rogner la surface cartographiée. Ancrés à droite et non à
+   gauche : la barre latérale occupe la gauche et sa largeur varie, un
+   ancrage à gauche les ferait passer dessous quand elle est dépliée. */
 .carte-zone.plein-ecran .draw-status,
 .carte-zone.plein-ecran .banner {
   position: absolute; z-index: 305; margin: 0;
-  left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+  left: auto; right: max(12px, env(safe-area-inset-right));
+  max-width: min(620px, 68vw);
   background: var(--surface); box-shadow: var(--shadow-lg);
   border-radius: var(--r-lg);
 }
 .carte-zone.plein-ecran .draw-status { bottom: max(12px, env(safe-area-inset-bottom)); }
-.carte-zone.plein-ecran .banner { top: max(12px, env(safe-area-inset-top)); }
+/* Décalé sous la croix de sortie, qui occupe déjà le coin. */
+.carte-zone.plein-ecran .banner { top: calc(max(14px, env(safe-area-inset-top)) + 60px); }
 
 /* Toujours au même endroit (coin haut-droit), toujours au-dessus de tout
    (la carte, la barre d'outils même quand elle défile) — une sortie fiable
