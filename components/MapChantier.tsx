@@ -743,6 +743,69 @@ export default function MapChantier({
     </>
   );
 
+  /* Barre d'outils découpée en groupes : en plein écran on ne garde que ce
+     qui sert à créer un tracé — reprendre une parcelle au cadastre, choisir
+     le fond sur lequel on la dessine, et se repérer pour poser les points au
+     bon endroit. Les outils de consultation et de partage (équipe, tracé GPS
+     parcouru, import/export) restent dans la vue normale. */
+  const outilCadastreParcelle = !readOnly && (
+    <button className="chip-btn" data-on={cadastreMode || undefined} onClick={basculerCadastre}
+      disabled={cadastreEnCours}
+      title="Reprendre le contour officiel d'une parcelle depuis le cadastre">
+      <IcRuler /> {cadastreEnCours ? "Lecture du cadastre…" : cadastreMode ? "Touche la parcelle…" : "Parcelle du cadastre"}
+    </button>
+  );
+
+  const outilsFond = (
+    <>
+      <div className="seg-mini">
+        {BASES.map((b) => (
+          <button key={b.id} data-on={base === b.id} onClick={() => setBase(b.id)}>{b.label}</button>
+        ))}
+      </div>
+      <button className="chip-btn" data-on={cadastre} onClick={() => setCadastre((v) => !v)}>Cadastre</button>
+    </>
+  );
+
+  const outilsRepere = (
+    <>
+      <button className="chip-btn" data-on={suivre} onClick={basculerSuivi}
+        title={suivre ? "Suivi en cours — reclique pour te déplacer librement" : "Centrer et suivre ta position en continu"}>
+        <IcPin /> {suivre ? "Suivi…" : "Suivre ma position"}
+      </button>
+      <button className="chip-btn" onClick={centrerToutes}>Recentrer</button>
+    </>
+  );
+
+  const outilsAnnexes = (
+    <>
+      {equipeLocalisee.length > 0 && (
+        <button className="chip-btn" onClick={centrerEquipe}>
+          <IcUsers /> Voir mon équipe ({equipeLocalisee.length})
+        </button>
+      )}
+      {equipiers !== undefined && (
+        <div className="seg-mini" title="Afficher le tracé GPS parcouru">
+          <button data-on={traceFiltre === "aucun"} onClick={() => setTraceFiltre("aucun")}><IcRoute /> Tracé</button>
+          <button data-on={traceFiltre === "abatteur"} onClick={() => setTraceFiltre("abatteur")}>Abatteur</button>
+          <button data-on={traceFiltre === "debardeur"} onClick={() => setTraceFiltre("debardeur")}>Débardeur</button>
+          <button data-on={traceFiltre === "tous"} onClick={() => setTraceFiltre("tous")}>Les deux</button>
+        </div>
+      )}
+      <div className="export-group">
+        {!readOnly && (
+          <>
+            <input ref={fileRef} type="file" accept=".geojson,.json,application/geo+json" style={{ display: "none" }} onChange={importer} />
+            <button className="chip-btn" onClick={() => fileRef.current?.click()}>Importer</button>
+          </>
+        )}
+        <button className="chip-btn" onClick={() => exporter("geojson")}>GeoJSON</button>
+        <button className="chip-btn" onClick={() => exporter("gpx")}>GPX</button>
+        <button className="chip-btn" onClick={() => exporter("kml")}>KML</button>
+      </div>
+    </>
+  );
+
   return (
     <div className="stack-gap">
       <div className={"carte-zone" + (pleinEcran ? " plein-ecran" : "")}>
@@ -769,54 +832,18 @@ export default function MapChantier({
         )}
         <div className="panneau-contenu">
       <div className="map-toolbar">
-        <button className="chip-btn" data-on={pleinEcran || undefined}
-          onClick={basculerPleinEcran}
-          aria-label={pleinEcran ? "Quitter le plein écran" : "Afficher en plein écran"}
-          title={pleinEcran ? "Quitter le plein écran" : "Plein écran"}>
-          {pleinEcran ? <IcShrink /> : <IcExpand />} {pleinEcran ? "Fermer" : "Plein écran"}
-        </button>
-        {!readOnly && (
-          <button className="chip-btn" data-on={cadastreMode || undefined} onClick={basculerCadastre}
-            disabled={cadastreEnCours}
-            title="Reprendre le contour officiel d'une parcelle depuis le cadastre">
-            <IcRuler /> {cadastreEnCours ? "Lecture du cadastre…" : cadastreMode ? "Touche la parcelle…" : "Parcelle du cadastre"}
+        {/* Le plein écran se quitte par la croix en haut à droite : ce bouton
+            ferait doublon dans la barre. */}
+        {!pleinEcran && (
+          <button className="chip-btn" onClick={basculerPleinEcran}
+            aria-label="Afficher en plein écran" title="Plein écran">
+            <IcExpand /> Plein écran
           </button>
         )}
-        <div className="seg-mini">
-          {BASES.map((b) => (
-            <button key={b.id} data-on={base === b.id} onClick={() => setBase(b.id)}>{b.label}</button>
-          ))}
-        </div>
-        <button className="chip-btn" data-on={cadastre} onClick={() => setCadastre((v) => !v)}>Cadastre</button>
-        <button className="chip-btn" data-on={suivre} onClick={basculerSuivi}
-          title={suivre ? "Suivi en cours — reclique pour te déplacer librement" : "Centrer et suivre ta position en continu"}>
-          <IcPin /> {suivre ? "Suivi…" : "Suivre ma position"}
-        </button>
-        <button className="chip-btn" onClick={centrerToutes}>Recentrer</button>
-        {equipeLocalisee.length > 0 && (
-          <button className="chip-btn" onClick={centrerEquipe}>
-            <IcUsers /> Voir mon équipe ({equipeLocalisee.length})
-          </button>
-        )}
-        {equipiers !== undefined && (
-          <div className="seg-mini" title="Afficher le tracé GPS parcouru">
-            <button data-on={traceFiltre === "aucun"} onClick={() => setTraceFiltre("aucun")}><IcRoute /> Tracé</button>
-            <button data-on={traceFiltre === "abatteur"} onClick={() => setTraceFiltre("abatteur")}>Abatteur</button>
-            <button data-on={traceFiltre === "debardeur"} onClick={() => setTraceFiltre("debardeur")}>Débardeur</button>
-            <button data-on={traceFiltre === "tous"} onClick={() => setTraceFiltre("tous")}>Les deux</button>
-          </div>
-        )}
-        <div className="export-group">
-          {!readOnly && (
-            <>
-              <input ref={fileRef} type="file" accept=".geojson,.json,application/geo+json" style={{ display: "none" }} onChange={importer} />
-              <button className="chip-btn" onClick={() => fileRef.current?.click()}>Importer</button>
-            </>
-          )}
-          <button className="chip-btn" onClick={() => exporter("geojson")}>GeoJSON</button>
-          <button className="chip-btn" onClick={() => exporter("gpx")}>GPX</button>
-          <button className="chip-btn" onClick={() => exporter("kml")}>KML</button>
-        </div>
+        {outilCadastreParcelle}
+        {outilsFond}
+        {outilsRepere}
+        {!pleinEcran && outilsAnnexes}
       </div>
           {pleinEcran && !readOnly && !drawType && (
             <div className="draw-actions">{outilsDessin}</div>
